@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cursos;
 use App\Models\Matriculas;
 use App\Models\User;
+use App\Rules\CpfValido;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -79,12 +80,17 @@ class AlunoAuthController extends Controller
         $cpf            = preg_replace('/\D+/', '', $request->cpf ?? '');
         $telefone       = preg_replace('/\D+/', '', $request->telefone ?? '');
 
+        $request->merge([
+            'cpf'      => $cpf,
+            'telefone' => $telefone,
+        ]);
+
         // 3) Regras, mensagens e rótulos amigáveis
         $rules = [
             'nome'            => ['bail','required','string','max:120'],
             'email'           => ['bail','required','email','unique:users,email'],
             'password'        => ['bail','required','min:6'],
-            'cpf'             => ['bail','required','string','unique:users,cpf'],
+            'cpf'             => ['bail','required','string','size:11', new CpfValido(), 'unique:users,cpf'],
             'telefone'        => ['bail','required','string','unique:users,telefone'],
             'data_nascimento' => ['bail','required','date','before:today','after:1900-01-01'],
         ];
@@ -131,12 +137,12 @@ class AlunoAuthController extends Controller
         // Cria e autentica o aluno
         $aluno = User::createOrFirst([
             'nome_completo'   => $data['nome'],
-            'cpf'             => $cpf,
+            'cpf'             => $request->cpf,       // já sem máscara
             'email'           => $data['email'],
-            'password'        => $data['password'],   // mutator do Model hasheia
+            'password'        => $data['password'],   // mutator faz o hash
             'tipo_usuario'    => 'aluno',
             'status'          => 'ativo',
-            'telefone'        => $telefone,
+            'telefone'        => $request->telefone,  // já sem máscara
             'data_nascimento' => $data['data_nascimento'],
         ]);
 
