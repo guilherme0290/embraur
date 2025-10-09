@@ -193,11 +193,11 @@ class StudentCertificatesController extends Controller
         $assinHImg = 30;
         $linhaY = 170;
         $wAssin = 70;
-        $xEsq = 30;
-        $xDir = 297 - 30 - $wAssin;
+        $xEsq = 40;
+        $xDir = 300 - 30 - $wAssin;
 
         // Instrutor
-        $placeImage($pdf, $assinInstrutorRel, $xEsq+25, $assinYImg, 50, $assinHImg, '');
+        $placeImage($pdf, $assinInstrutorRel, $xEsq+15, $assinYImg, 50, $assinHImg, '');
         $pdf->SetDrawColor(0,0,0);
         $pdf->SetXY($xEsq, $linhaY); $pdf->Cell($wAssin, 0, '', 'T');
         $pdf->SetFont('Arial','',10);
