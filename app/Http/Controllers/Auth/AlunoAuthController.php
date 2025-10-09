@@ -79,6 +79,9 @@ class AlunoAuthController extends Controller
         $cpf            = preg_replace('/\D+/', '', $request->cpf ?? '');
         $telefone       = preg_replace('/\D+/', '', $request->telefone ?? '');
 
+
+
+
         // 3) Regras, mensagens e rótulos amigáveis
         $rules = [
             'nome'            => ['bail','required','string','max:120'],

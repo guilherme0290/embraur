@@ -138,12 +138,12 @@ class StudentCertificatesController extends Controller
         $pdf->Image($front, 0, 0, 297, 210, $type);
 
         // LOGO topo (maior). Caixa ~ 90 x 32 mm
-        $placeImage($pdf, $logoRel, 103.5, 16, 90, 32, 'LOGO');
+        $placeImage($pdf, $logoRel, 103.5, 16, 95, 32, 'LOGO');
 
         // Caixa "CERTIFICADO" (acima do nome)
         $pdf->SetDrawColor(0,0,0);
-        $pdf->Rect(123, 52, 60, 10);
-        $pdf->SetFont('Arial','B',12);
+        //$pdf->Rect(123, 52, 60, 10);
+        $pdf->SetFont('Arial','B',25);
         $pdf->SetXY(123, 52);
         $pdf->Cell(60, 10, $toPdf('CERTIFICADO'), 0, 0, 'C');
 
@@ -161,18 +161,26 @@ class StudentCertificatesController extends Controller
         }
 
         // Texto do curso (com NOME DO CURSO em negrito, centralizado em 2 linhas)
-        $pdf->SetFont('Arial','',12);
+        $pdf->SetFont('Arial','',15);
         $pdf->SetXY(25, 105);
         $pdf->Cell(247, 6, $toPdf('Certificamos que o aluno concluiu com aproveitamento o curso de'), 0, 2, 'C');
-        $pdf->SetFont('Arial','B',12);
+        $pdf->SetFont('Arial','B',14);
         $pdf->Cell(247, 6, $toPdf($curso->titulo), 0, 2, 'C');
         $pdf->SetFont('Arial','',12);
-        $pdf->Cell(247, 6, $toPdf('com carga horária de '.$curso->carga_horaria_total.' horas concluído em:'), 0, 2, 'C');
+        $pdf->Cell(247, 6, $toPdf('com carga horária de '.$curso->carga_horaria_total.' horas realizado no período:'), 0, 2, 'C');
 
         // Período (APENAS a linha "De XX a YY" dentro da caixa)
         $fmt = fn($d) => $d ? $d->format('d/m/Y') : '—';
+
         $inicio = $matricula->data_inicio ?? $cert->data_emissao ?? $matricula->created_at ?? now();
         $fim    = $matricula->data_fim    ?? $cert->data_emissao ?? $inicio;
+
+        //Garante que o início seja pelo menos 4 dias antes do fim
+        if ($fim instanceof \Carbon\Carbon && $inicio instanceof \Carbon\Carbon) {
+            if ($fim->diffInDays($inicio, false) < 4) {
+                $inicio = $fim->copy()->subDays(4);
+            }
+        }
 
         $pdf->SetDrawColor(120,120,120);
         $pdf->Rect(98, 123, 101, 10);
@@ -181,8 +189,12 @@ class StudentCertificatesController extends Controller
         $pdf->Cell(101, 10, $toPdf('De '.$fmt($inicio).' a '.$fmt($fim)), 0, 0, 'C');
 
         // Assinaturas: instrutor (com imagem) e aluno (SÓ espaço/linha)
-        $assinYImg = 150; $assinHImg = 18; $linhaY = 170; $wAssin = 100;
-        $xEsq = 30; $xDir = 297 - 30 - $wAssin;
+        $assinYImg = 140;
+        $assinHImg = 30;
+        $linhaY = 170;
+        $wAssin = 70;
+        $xEsq = 30;
+        $xDir = 297 - 30 - $wAssin;
 
         // Instrutor
         $placeImage($pdf, $assinInstrutorRel, $xEsq+25, $assinYImg, 50, $assinHImg, '');
@@ -191,9 +203,11 @@ class StudentCertificatesController extends Controller
         $pdf->SetFont('Arial','',10);
         $pdf->SetXY($xEsq, $linhaY+2); $pdf->Cell($wAssin, 5, $toPdf('Instrutor'), 0, 0, 'C');
 
+
         // Aluno (sem imagem pré-definida)
         $pdf->SetXY($xDir, $linhaY); $pdf->Cell($wAssin, 0, '', 'T');
         $pdf->SetXY($xDir, $linhaY+2); $pdf->Cell($wAssin, 5, $toPdf('Aluno(a)'), 0, 0, 'C');
+
 
         // ========= PÁGINA 2 =========
         $pdf->AddPage();

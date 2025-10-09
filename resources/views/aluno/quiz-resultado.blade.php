@@ -73,10 +73,11 @@
                             <p class="text-emerald-600 font-medium mt-3">
                                 Parabéns! Você foi aprovado neste módulo.
                             </p>
-                            {{-- continuar curso (vai para o próximo módulo se existir) --}}
+
                             <div class="mt-4">
-                                @if($proximoModulo)
-                                    <a href="{{ route('aluno.curso.modulo', [$curso->id, $proximoModulo->id]) }}"
+                                @if(!empty($proximoModulo) && !empty($primeiraAulaProx))
+                                    {{-- Leva direto para a 1ª aula do próximo módulo --}}
+                                    <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $proximoModulo->id, $primeiraAulaProx->id]) }}"
                                        class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                                         Continuar curso
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -84,6 +85,7 @@
                                         </svg>
                                     </a>
                                 @else
+                                    {{-- Se não há próximo módulo/aula, volta para o sumário do curso --}}
                                     <a href="{{ route('aluno.curso.conteudo', $curso->id) }}"
                                        class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                                         Voltar ao curso
@@ -127,7 +129,7 @@
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
                                         <p class="text-slate-800 font-medium">
-                                            Questão {{ $i+1 }}: {{ $r['questao']->enunciado }}
+                                            Questão {{ $i+1 }}: {!! $r['questao']->enunciado !!}
                                         </p>
                                         <p class="text-slate-600 text-sm mt-1">
                                             <strong>Sua resposta:</strong> <span class="{{ $ok ? 'text-emerald-700' : 'text-rose-700' }}">{{ $sua }}</span>

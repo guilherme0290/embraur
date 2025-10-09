@@ -184,6 +184,29 @@ class AlunoQuizController extends Controller
          * o próximo módulo ficará automaticamente liberado – não é preciso gravar nada extra.
          */
 
+        $curso->load([
+            'modulos.aulas' => fn($q) => $q->orderByRaw('COALESCE(ordem, 999999), id')
+        ]);
+
+        $modsSorted = $curso->modulos
+            ->sortBy(fn($m) => [$m->ordem ?? 999999, $m->id])
+            ->values();
+
+        // índice do módulo atual DENTRO da coleção (não usar 'ordem' como índice!)
+        $idxAtual = $modsSorted->search(fn($m) => (int)$m->id === (int)optional($quiz->modulo)->id);
+
+        // próximo módulo (se existir)
+        $proximoModulo = ($idxAtual !== false) ? ($modsSorted[$idxAtual + 1] ?? null) : null;
+
+        // primeira aula do próximo módulo (pula módulos sem aulas, se houver)
+        $primeiraAulaProx = null;
+        if ($proximoModulo) {
+            $aulas = $proximoModulo->aulas
+                ->sortBy(fn($a) => [$a->ordem ?? 999999, $a->id])
+                ->values();
+            $primeiraAulaProx = $aulas->first();
+        }
+
         return view('aluno.quiz-resultado', [
             'curso'      => $curso,
             'quiz'       => $quiz,
@@ -192,7 +215,9 @@ class AlunoQuizController extends Controller
             'nota10'     => $nota10,
             'aprovado'   => $aprovado,
             'resumo'     => $resumo,
-            'respostas'  => $respostas
+            'respostas'  => $respostas,
+            'proximoModulo'     => $proximoModulo,
+            'primeiraAulaProx'  => $primeiraAulaProx,
         ]);
     }
 
@@ -200,9 +225,6 @@ class AlunoQuizController extends Controller
     {
         $alunoId = auth('aluno')->id() ?? $rq->session()->get('aluno_id');
         abort_if(!$alunoId, 403);
-
-        // Aqui você pode colocar validações extras no futuro
-        // Exemplo: se já tentou mais de 3 vezes, não permitir refazer.
 
         return redirect()->route('aluno.quiz.show', [$curso->id, $quiz->id]);
     }
