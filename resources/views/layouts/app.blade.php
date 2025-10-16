@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>@yield('title', 'Embraur')</title>
     <link rel="icon" type="image/png" href="{{ asset('storage/images/favicon.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+
 
     {{-- mantém o seu vite (se já estiver ok, segue usando) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])

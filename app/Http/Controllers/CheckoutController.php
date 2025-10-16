@@ -62,8 +62,7 @@ class CheckoutController extends Controller
             ]);
         }
 
-        // Fallback simples (caso não tenha o helper ainda)
-        $cupom = \App\Models\Cupom::where('codigo', mb_strtoupper($codigo))->first();
+        $cupom = Cupom::where('codigo', mb_strtoupper($codigo))->first();
         if (!$cupom || !$cupom->ativoAgora()) {
             return response()->json(['ok' => false, 'mensagem' => 'Cupom inválido ou fora da validade.'], 422);
         }
@@ -156,8 +155,20 @@ class CheckoutController extends Controller
         ])->values()->all();
 
         // **Ajuste de preço para refletir o desconto**:
-        if ($desconto > 0 && isset($items[0])) {
-            $items[0]['unit_price'] = max(0.01, round($items[0]['unit_price'] - $desconto, 2));
+        if ($desconto > 0 && count($items) > 0) {
+            $totalBruto = array_sum(array_map(fn($i) => $i['unit_price'] * $i['quantity'], $items));
+            if ($totalBruto > 0) {
+                $restante = round($desconto, 2);
+                foreach ($items as $k => &$it) {
+                    $valorItem = round($it['unit_price'] * $it['quantity'], 2);
+                    $cota = round(($valorItem / $totalBruto) * $desconto, 2);
+                    $cota = min($cota, $valorItem);
+                    $novoTotal = max($valorItem - $cota, 0.01);
+                    $it['unit_price'] = max(0.01, round($novoTotal / $it['quantity'], 2));
+                    $restante = round($restante - $cota, 2);
+                }
+                unset($it);
+            }
         }
 
         $pref = $this->mpCreatePreference($items, 'PED:' . $pedido->id, $cupom?->codigo, $desconto);
@@ -175,7 +186,7 @@ class CheckoutController extends Controller
 
         $subtotal = (float) ($curso->preco ?? 0);
 
-        // Se existir helper aplicarCupom($codigo, $subtotal):
+
         if (method_exists($this, 'aplicarCupom')) {
             [$cupom, $desconto] = $this->aplicarCupom($codigo, $subtotal);
             if (!$cupom) {
@@ -273,7 +284,14 @@ class CheckoutController extends Controller
             'currency_id' => 'BRL',
         ]];
 
-        $pref = $this->mpCreatePreference($items, 'PED:' . $pedido->id, $cupom?->codigo, $desconto);
+        $itemsComDesconto = $this->distribuirDescontoNosItems($items, (float)$desconto);
+
+        $pref = $this->mpCreatePreference(
+            $itemsComDesconto,
+            'PED:' . $pedido->id,
+            $cupom?->codigo,
+            (float)$desconto
+        );
         $pedido->update(['referencia_pagamento_externa' => $pref->id]);
 
         return redirect()->away($pref->init_point);
@@ -472,6 +490,50 @@ class CheckoutController extends Controller
 
         return redirect()->route('aluno.dashboard')
             ->with('error', 'Pagamento não aprovado. Você pode tentar novamente quando quiser.');
+    }
+
+    private function distribuirDescontoNosItems(array $items, float $descontoTotal): array
+    {
+        if ($descontoTotal <= 0) return $items;
+
+        $bruto = 0.0;
+        foreach ($items as $it) {
+            $bruto += ((float)$it['unit_price']) * (int)$it['quantity'];
+        }
+        if ($bruto <= 0) return $items;
+
+        // 1) calcula cota proporcional por item
+        $restante = round($descontoTotal, 2);
+        foreach ($items as $i => $it) {
+            $valorItem = round(((float)$it['unit_price']) * (int)$it['quantity'], 2);
+            $cota = round(($valorItem / $bruto) * $descontoTotal, 2);
+            $cota = min($cota, $valorItem);
+
+            // novo unit_price após desconto rateado
+            $novoTotalItem = max($valorItem - $cota, 0);
+            $novaQtd = max((int)$it['quantity'], 1);
+            $novoUnit = max(0.01, round($novoTotalItem / $novaQtd, 2)); // MP não aceita 0.00
+
+            $items[$i]['unit_price'] = $novoUnit;
+            $restante = round($restante - $cota, 2);
+        }
+
+        // 2) ajuste de centavos que sobrarem
+        $i = 0;
+        while ($restante > 0.0001 && $i < count($items)) {
+            $qtd = max((int)$items[$i]['quantity'], 1);
+            $unit = (float)$items[$i]['unit_price'];
+            $totalItem = round($unit * $qtd, 2);
+
+            if ($totalItem > 0.01) { // ainda dá pra reduzir 0,01
+                $totalItem = max($totalItem - 0.01, 0.01);
+                $items[$i]['unit_price'] = max(0.01, round($totalItem / $qtd, 2));
+                $restante = round($restante - 0.01, 2);
+            }
+            $i++;
+        }
+
+        return $items;
     }
 
 
