@@ -39,6 +39,13 @@
 
             <div class="grid md:grid-cols-4 gap-4 mt-6">
                 @foreach ($populares as $curso)
+                    @php
+                        $minutos = (int) ($curso->carga_horaria_total ?? 0);
+                        $horas = $minutos / 60;
+                        $horasFmt = fmod($horas, 1.0) === 0.0
+                            ? number_format($horas, 0, ',', '.')
+                            : number_format($horas, 1, ',', '.');
+                    @endphp
                     <div class="group card h-full flex flex-col overflow-hidden rounded-xl border border-slate-200
             hover:border-[#cdd5bf] hover:ring-2 hover:ring-[#cdd5bf]/60 hover:shadow-xl
             transition-all duration-300">
@@ -59,7 +66,7 @@
                             </h3>
 
                             <div class="text-xs text-slate-500 flex items-center gap-3">
-                                <span><i class="ri-time-line mr-1"></i> {{ $curso->carga_horaria_total }}h</span>
+                                <span><i class="ri-time-line mr-1"></i> {{ $horasFmt }}h</span>
                             </div>
 
                             {{-- empurra o rodapé (preço + botão) para o fim do card --}}

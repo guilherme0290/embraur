@@ -64,7 +64,16 @@
                         <div>
                             <dt class="text-sm text-gray-500">Carga horária</dt>
                             <dd class="mt-1 font-medium text-gray-900">
-                                {{ $cert->matricula->curso->carga_horaria_total ?? '—' }}h
+                                @php
+                                    $minutos = (int) ($cert->matricula->curso->carga_horaria_total ?? 0);
+                                    $horas = $minutos / 60;
+                                    $horasFmt = $minutos > 0
+                                        ? (fmod($horas, 1.0) === 0.0
+                                            ? number_format($horas, 0, ',', '.')
+                                            : number_format($horas, 1, ',', '.'))
+                                        : '—';
+                                @endphp
+                                {{ $horasFmt }}@if($horasFmt !== '—')h@endif
                             </dd>
                         </div>
 

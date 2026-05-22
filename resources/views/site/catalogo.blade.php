@@ -42,6 +42,13 @@
         {{-- Grid de cards --}}
         <div class="grid gap-4 mt-6 md:grid-cols-2 lg:grid-cols-3">
             @forelse ($cursos as $curso)
+                @php
+                    $minutos = (int) ($curso->carga_horaria_total ?? 0);
+                    $horas = $minutos / 60;
+                    $horasFmt = fmod($horas, 1.0) === 0.0
+                        ? number_format($horas, 0, ',', '.')
+                        : number_format($horas, 1, ',', '.');
+                @endphp
                 <article class="rounded-xl border bg-white overflow-hidden shadow-sm hover:shadow-md transition h-full flex flex-col">
                     {{-- Capa padronizada --}}
                     <div class="bg-slate-100">
@@ -75,7 +82,7 @@
                         </p>
 
                         <div class="text-xs text-slate-500 flex items-center gap-4">
-                            <span>⏱️ {{ (int)($curso->carga_horaria_total ?? 0) }}h</span>
+                            <span>⏱️ {{ $horasFmt }}h</span>
                         </div>
 
                         {{-- Preço --}}
