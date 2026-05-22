@@ -44,29 +44,55 @@ class CursoAdminController extends Controller
     {
         $profId = session('prof_id');
 
+        $messages = [
+            'required' => 'O campo :attribute é obrigatório.',
+            'required_with' => 'O campo :attribute é obrigatório.',
+            'numeric' => 'O campo :attribute deve ser numérico.',
+            'min' => 'O campo :attribute deve ser no mínimo :min.',
+            'max' => 'O campo :attribute deve ser no máximo :max.',
+            'exists' => 'O valor informado para :attribute é inválido.',
+            'in' => 'O valor informado para :attribute é inválido.',
+        ];
+
+        $attributes = [
+            'categoria_id' => 'categoria',
+            'titulo' => 'título do curso',
+            'descricao_completa' => 'descrição completa',
+            'nivel' => 'nível',
+            'nota_minima_aprovacao' => 'nota mínima para aprovação',
+            'preco' => 'preço',
+            'preco_original' => 'preço original',
+            'imagem_capa' => 'imagem do curso',
+            'modulos' => 'módulos do curso',
+            'modulos.*.aulas' => 'aulas do módulo',
+            'modulos.*.titulo' => 'título do módulo',
+            'modulos.*.aulas.*.titulo' => 'título da aula',
+            'modulos.*.aulas.*.duracao_minutos' => 'duração da aula (min)',
+            'modulos.*.aulas.*.tipo' => 'tipo da aula',
+        ];
 
         $data = $request->validate([
             'categoria_id'          => ['required','exists:categorias,id'],
             'titulo'                => ['required','string','max:255'],
             //'descricao_curta'       => ['nullable','string'],
-            'descricao_completa'    => ['nullable','string'],
+            'descricao_completa'    => ['required','string'],
             'nivel'                 => ['required', Rule::in(['todos','iniciante','intermediario','avancado'])],
             'carga_horaria_horas'   => ['nullable','numeric','min:0'], // campo da tela (horas)
             'maximo_alunos'         => ['nullable','integer','min:1'],
-            'preco'                 => ['nullable','numeric','min:0'],
-            'preco_original'        => ['nullable','numeric','min:0'],
-            'nota_minima_aprovacao' => ['nullable','numeric','min:0','max:10'],
+            'preco'                 => ['required','numeric','min:0'],
+            'preco_original'        => ['required','numeric','min:0'],
+            'nota_minima_aprovacao' => ['required','numeric','min:0','max:10'],
             'validade_dias'         => ['nullable','integer','min:1'],
             'status'                => ['nullable', Rule::in(['rascunho','publicado','arquivado'])],
-            'imagem_capa'           => ['nullable','image','max:4096'],
+            'imagem_capa'           => ['required','image','max:4096'],
             // estrutura
-            'modulos'                              => ['nullable','array'],
+            'modulos'                              => ['required','array','min:1'],
             'modulos.*.titulo'                     => ['required','string','max:255'],
             'modulos.*.descricao'            => ['nullable','string'],
-            'modulos.*.aulas'                      => ['nullable','array'],
-            'modulos.*.aulas.*.titulo'             => ['required_with:modulos.*.aulas.*','string','max:255'],
-            'modulos.*.aulas.*.duracao_minutos'    => ['nullable','integer','min:0'],
-            'modulos.*.aulas.*.tipo'               => ['required_with:modulos.*.aulas.*', Rule::in(['video','texto','quiz','arquivo'])],
+            'modulos.*.aulas'                      => ['required','array','min:1'],
+            'modulos.*.aulas.*.titulo'             => ['required','string','max:255'],
+            'modulos.*.aulas.*.duracao_minutos'    => ['required','integer','min:1'],
+            'modulos.*.aulas.*.tipo'               => ['required', Rule::in(['video','texto','quiz','arquivo'])],
             'modulos.*.aulas.*.conteudo_url'       => ['nullable','string','max:255'],
             'modulos.*.aulas.*.conteudo_texto'     => ['nullable','string'],
             'modulos.*.aulas.*.descricao'     => ['nullable','string'],
@@ -77,13 +103,14 @@ class CursoAdminController extends Controller
                 'mimes:mp4,webm,ogg,mov,pdf,doc,docx',
                 'max:1024000'
             ],
-        ]);
+        ], $messages, $attributes);
 
         $dataCurso = collect($data)->only([
             'categoria_id','titulo','descricao_completa',
             'nivel','maximo_alunos','preco','preco_original','nota_minima_aprovacao',
             'validade_dias','status'
         ])->toArray();
+        $dataCurso['nota_minima_aprovacao'] = $data['nota_minima_aprovacao'] ?? 0;
 
         $dataCurso['professor_id'] = $profId ?? null;
         // Horas (UI) → minutos (DB)
@@ -181,30 +208,56 @@ class CursoAdminController extends Controller
     {
         $this->authorizeCurso($curso);
 
+        $messages = [
+            'required' => 'O campo :attribute é obrigatório.',
+            'required_with' => 'O campo :attribute é obrigatório.',
+            'numeric' => 'O campo :attribute deve ser numérico.',
+            'min' => 'O campo :attribute deve ser no mínimo :min.',
+            'max' => 'O campo :attribute deve ser no máximo :max.',
+            'exists' => 'O valor informado para :attribute é inválido.',
+            'in' => 'O valor informado para :attribute é inválido.',
+        ];
+
+        $attributes = [
+            'categoria_id' => 'categoria',
+            'titulo' => 'título do curso',
+            'descricao_completa' => 'descrição completa',
+            'nivel' => 'nível',
+            'nota_minima_aprovacao' => 'nota mínima para aprovação',
+            'preco' => 'preço',
+            'preco_original' => 'preço original',
+            'imagem_capa' => 'imagem do curso',
+            'modulos' => 'módulos do curso',
+            'modulos.*.aulas' => 'aulas do módulo',
+            'modulos.*.titulo' => 'título do módulo',
+            'modulos.*.aulas.*.titulo' => 'título da aula',
+            'modulos.*.aulas.*.duracao_minutos' => 'duração da aula (min)',
+            'modulos.*.aulas.*.tipo' => 'tipo da aula',
+        ];
 
         $data = $request->validate([
             'categoria_id'          => ['required','exists:categorias,id'],
             'titulo'                => ['required','string','max:255'],
             //'descricao_curta'       => ['nullable','string'],
-            'descricao_completa'    => ['nullable','string'],
+            'descricao_completa'    => ['required','string'],
             'nivel'                 => ['required', Rule::in(['todos','iniciante','intermediario','avancado'])],
-            'preco'                 => ['nullable','numeric','min:0'],
-            'preco_original'        => ['nullable','numeric','min:0'],
-            'nota_minima_aprovacao' => ['nullable','numeric','min:0','max:10'],
+            'preco'                 => ['required','numeric','min:0'],
+            'preco_original'        => ['required','numeric','min:0'],
+            'nota_minima_aprovacao' => ['required','numeric','min:0','max:10'],
             'validade_dias'         => ['nullable','integer','min:1'],
             'status'                => ['nullable', Rule::in(['rascunho','publicado','arquivado'])],
             'imagem_capa'           => ['nullable','image','max:4096'],
 
             // estrutura (update)
-            'modulos'                              => ['nullable','array'],
+            'modulos'                              => ['required','array','min:1'],
             'modulos.*.id'                         => ['nullable','exists:modulos,id'],
             'modulos.*.titulo'                     => ['required','string','max:255'],
             'modulos.*.descricao'                  => ['nullable','string'],
-            'modulos.*.aulas'                      => ['nullable','array'],
+            'modulos.*.aulas'                      => ['required','array','min:1'],
             'modulos.*.aulas.*.id'                 => ['nullable','exists:aulas,id'],
-            'modulos.*.aulas.*.titulo'             => ['required_with:modulos.*.aulas.*','string','max:255'],
-            'modulos.*.aulas.*.duracao_minutos'    => ['nullable','integer','min:0'],
-            'modulos.*.aulas.*.tipo'               => ['required_with:modulos.*.aulas.*', Rule::in(['video','texto','quiz','arquivo'])],
+            'modulos.*.aulas.*.titulo'             => ['required','string','max:255'],
+            'modulos.*.aulas.*.duracao_minutos'    => ['required','integer','min:1'],
+            'modulos.*.aulas.*.tipo'               => ['required', Rule::in(['video','texto','quiz','arquivo'])],
             'modulos.*.aulas.*.conteudo_url'       => ['nullable','string','max:255'],
             'modulos.*.aulas.*.conteudo_texto'       => ['nullable','string'],
             'modulos.*.aulas.*.descricao'     => ['nullable','string'],
@@ -216,10 +269,11 @@ class CursoAdminController extends Controller
                 'mimes:mp4,webm,ogg,mov,pdf,doc,docx',
                 'max:1024000'
             ],
-        ]);
+        ], $messages, $attributes);
 
         // payload curso
         $payload = collect($data)->except(['imagem_capa','modulos'])->toArray();
+        $payload['nota_minima_aprovacao'] = $data['nota_minima_aprovacao'] ?? 0;
 
         // horas (se vierem como input futuro)
         if (isset($payload['carga_horaria_horas'])) {

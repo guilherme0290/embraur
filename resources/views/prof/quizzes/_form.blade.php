@@ -26,13 +26,6 @@
 {{-- CAMPOS PRINCIPAIS --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
     <div>
-        <label class="text-sm font-medium">Título *</label>
-        <input name="titulo" value="{{ old('titulo', $quiz->titulo ?? '') }}"
-               class="mt-1 w-full h-10 rounded-md border px-3" required>
-        @error('titulo') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
-    </div>
-
-    <div>
         <label class="text-sm font-medium">Escopo *</label>
         <select name="escopo" class="mt-1 w-full h-10 rounded-md border px-3">
             <option value="curso"  @selected($escopoSel==='curso')>Curso</option>
@@ -62,11 +55,6 @@
         @error('modulo_id') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
     </div>
 
-    <div class="md:col-span-2">
-        <label class="text-sm font-medium">Descrição</label>
-        <textarea name="descricao" rows="3"
-                  class="mt-1 w-full rounded-md border px-3 py-2">{{ old('descricao', $quiz->descricao ?? '') }}</textarea>
-    </div>
 </div>
 
 {{-- QUESTÕES (UM ÚNICO include) --}}

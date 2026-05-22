@@ -84,7 +84,7 @@
 @endif
 
 {{-- VALIDAÇÃO: lista de erros (mostra até 5) --}}
-@if ($errors->any())
+@if ($errors->any() && !request()->routeIs('prof.cursos.create', 'prof.cursos.store', 'prof.cursos.edit', 'prof.cursos.update'))
     @php
         $all = $errors->all();                     // array de mensagens
         $top = collect($all)->take(5);             // pega só as 5 primeiras

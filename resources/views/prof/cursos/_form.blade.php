@@ -2,6 +2,12 @@
 {{--@section('title','Criar Novo Curso')--}}
 {{--@section('content')--}}
 <section class="container-page mx-auto py-6 max-w-5xl">
+    @php
+        $modulosFromOld = old('modulos');
+        $modulosForm = is_array($modulosFromOld)
+            ? $modulosFromOld
+            : ($curso->modulos ?? collect())->toArray();
+    @endphp
 
     {{-- Estilos leves para separar módulos/aulas sem quebrar Tailwind --}}
     <style>
@@ -74,6 +80,7 @@
                 <label class="text-sm font-medium">Título do Curso *</label>
                 <input name="titulo"
                        value="{{ old('titulo', $curso->titulo) }}"
+                       data-required-field="1" data-label="Título do curso"
                        required placeholder="Ex.: Curso completo de React"
                        class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
                 @error('titulo') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
@@ -82,6 +89,7 @@
             <div>
                 <label class="text-sm font-medium">Categoria *</label>
                 <select name="categoria_id" required
+                        data-required-field="1" data-label="Categoria"
                         class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
                     <option value="">Selecione uma categoria</option>
                     @foreach($categorias as $cat)
@@ -113,15 +121,18 @@
                 <textarea
                     name="descricao_completa"
                     id="descricao_completa"
+                    data-required-field="1" data-label="Descrição completa"
                     class="js-ckeditor mt-1 w-full rounded-md border border-slate-300"
                     placeholder="Descreva detalhadamente o que os alunos irão aprender..."
                     rows="8"
                 >{{ old('descricao_completa', $curso->descricao_completa) }}</textarea>
+                @error('descricao_completa') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
             </div>
 
             <div>
                 <label class="text-sm font-medium">Nível *</label>
                 <select name="nivel" required
+                        data-required-field="1" data-label="Nível"
                         class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 bg-white">
                     @php
                         // usa o que veio do POST (old) ou o que está no modelo
@@ -132,21 +143,36 @@
                     <option value="intermediario"  @selected($nivelSel==='intermediario')>Intermediário</option>
                     <option value="avancado"       @selected($nivelSel==='avancado')>Avançado</option>
                 </select>
+                @error('nivel') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
             </div>
             <div>
             <label class="text-sm font-medium">Preço original (R$)</label>
             <input name="preco_original"
                    value="{{ old('preco_original', $curso->preco_original) }}"
-                   type="number" min="0" step="0.01" placeholder="Ex.: 99,90"
+                   id="precoOriginalInput"
+                   required
+                   data-required-field="1" data-label="Preço original"
+                   data-money-mask="true"
+                   inputmode="decimal"
+                   autocomplete="off"
+                   type="text" placeholder="Ex.: 99,90"
                    class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+            @error('preco_original') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
             </div>
             <div>
 
                 <label class="text-sm font-medium">Preço (R$)</label>
                 <input name="preco"
                        value="{{ old('preco', $curso->preco) }}"
-                       type="number" min="0" step="0.01" placeholder="Ex.: 99,90"
+                       id="precoInput"
+                       required
+                       data-required-field="1" data-label="Preço"
+                       data-money-mask="true"
+                       inputmode="decimal"
+                       autocomplete="off"
+                       type="text" placeholder="Ex.: 99,90"
                        class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+                @error('preco') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
 
 
 
@@ -156,8 +182,11 @@
                 <label class="text-sm font-medium">Nota Minima Para Aprovação</label>
                 <input name="nota_minima_aprovacao"
                        value="{{ old('nota_minima_aprovacao', $curso->nota_minima_aprovacao) }}"
-                       type="number" min="0" placeholder="Ex.: 7"
+                       required
+                       data-required-field="1" data-label="Nota mínima para aprovação"
+                       type="number" min="0" max="10" step="0.1" placeholder="Ex.: 7"
                        class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+                @error('nota_minima_aprovacao') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
             </div>
 
             <div class="md:col-span-2">
@@ -165,6 +194,7 @@
                 <div class="mt-1 rounded-md border border-dashed p-6 text-center text-slate-500 bg-slate-50/50">
                     <div class="mb-3">Clique para fazer upload ou arraste uma imagem</div>
                     <input type="file" name="imagem_capa" id="imagemCapa" accept="image/*"
+                           @if(($mode ?? 'create') === 'create') required data-required-field="1" data-label="Imagem do curso" @endif
                            class="mx-auto block">
                     <div class="mt-3 aspect-video rounded bg-slate-100 overflow-hidden ring-1 ring-slate-200">
                         <img id="previewCapa"
@@ -188,7 +218,14 @@
         </div>
 
         <div id="modulosWrap" class="space-y-4">
-            @foreach($curso->modulos as $mIdx => $modulo)
+            @foreach($modulosForm as $mIdx => $modulo)
+                @php
+                    $moduloId = data_get($modulo, 'id');
+                    $moduloTitulo = data_get($modulo, 'titulo');
+                    $moduloDescricao = data_get($modulo, 'descricao');
+                    $aulasModulo = data_get($modulo, 'aulas', []);
+                    $quizModulo = is_object($modulo) ? $modulo->quiz : null;
+                @endphp
                 <div class="rounded-lg border p-0 overflow-hidden" data-modulo="{{ $mIdx }}">
                     {{-- Cabeçalho do módulo (colapsável) --}}
                     <div class="flex items-center justify-between px-4 py-3 bg-slate-50 border-b">
@@ -201,20 +238,20 @@
                                 <h3 class="font-semibold">Módulo <span class="mod-num">{{ $mIdx + 1 }}</span></h3>
                                 {{-- Badge de status da Prova --}}
                                 <div class="mt-1">
-                                    @if($modulo->quiz)
+                                    @if($quizModulo)
                                         <span class="pill bg-green-100 text-green-700 border border-green-200">
                                                 ✅ Prova cadastrada
                                             </span>
-                                        @if(isset($curso->id))
-                                            <a href="{{ route('prof.quizzes.edit', $modulo->quiz->id ?? 0) }}"
+                                        @if(isset($curso->id) && $quizModulo)
+                                            <a href="{{ route('prof.quizzes.edit', $quizModulo->id ?? 0) }}"
                                                class="text-xs underline text-green-700 ml-2">Editar</a>
                                         @endif
                                     @else
                                         <span class="pill bg-slate-100 text-slate-700 border border-slate-200">
                                                 ⏳ Sem prova
                                             </span>
-                                        @if(isset($curso->id))
-                                            <a href="{{ route('prof.quizzes.create', ['curso' => $curso->id, 'modulo' => $modulo->id]) }}"
+                                        @if(isset($curso->id) && $moduloId)
+                                            <a href="{{ route('prof.quizzes.create', ['curso' => $curso->id, 'modulo' => $moduloId]) }}"
                                                class="text-xs underline text-blue-700 ml-2">Criar agora</a>
                                         @endif
                                     @endif
@@ -227,55 +264,67 @@
 
                     <div class="modulo-body p-4">
                         {{-- ID do módulo (update) --}}
-                        <input type="hidden" name="modulos[{{ $mIdx }}][id]" value="{{ $modulo->id }}">
+                        <input type="hidden" name="modulos[{{ $mIdx }}][id]" value="{{ $moduloId }}">
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                             <div class="md:col-span-2">
                                 <label class="text-sm font-medium">Título do Módulo</label>
                                 <input required name="modulos[{{ $mIdx }}][titulo]"
-                                       value="{{ old("modulos.$mIdx.titulo", $modulo->titulo) }}"
+                                       value="{{ old("modulos.$mIdx.titulo", $moduloTitulo) }}"
+                                       data-required-field="1" data-label="Título do módulo"
                                        class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+                                @error("modulos.$mIdx.titulo") <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
                             </div>
                             <div class="md:col-span-2">
                                 <label class="text-sm font-medium">Descrição do Módulo</label>
                                 <textarea name="modulos[{{ $mIdx }}][descricao]"
                                           class="js-ckeditor mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
                                           rows="4"
-                                >{{ old("modulos.$mIdx.descricao", $modulo->descricao) }}</textarea>
+                                >{{ old("modulos.$mIdx.descricao", $moduloDescricao) }}</textarea>
                             </div>
                         </div>
 
                         {{-- Aulas --}}
                         <div class="space-y-6" data-aulas="{{ $mIdx }}">
-                            @foreach($modulo->aulas as $aIdx => $aula)
+                            @foreach($aulasModulo as $aIdx => $aula)
                                 <div class="aula-card grid grid-cols-1 md:grid-cols-4 gap-3 border rounded-md p-3 bg-white" data-aula="{{ $aIdx }}">
-                                    <input type="hidden" name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][id]" value="{{ $aula->id }}">
+                                    <input type="hidden" name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][id]" value="{{ data_get($aula, 'id') }}">
 
                                     <div class="md:col-span-2">
-                                        <label class="text-sm font-medium">Título da Aula</label>
+                                        <label class="block h-5 leading-5 text-sm font-medium whitespace-nowrap">Título da Aula</label>
                                         <input name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][titulo]"
-                                               value="{{ old("modulos.$mIdx.aulas.$aIdx.titulo", $aula->titulo) }}"
+                                               value="{{ old("modulos.$mIdx.aulas.$aIdx.titulo", data_get($aula, 'titulo')) }}"
+                                               data-required-field="1" data-label="Título da aula"
                                                class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: Criando componentes">
+                                        @error("modulos.$mIdx.aulas.$aIdx.titulo") <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
                                     </div>
 
                                     <div>
-                                        <label class="text-sm font-medium">Duração (min)</label>
-                                        <input type="number" min="0" step="1"
+                                        @php $tipoDuracao = old("modulos.$mIdx.aulas.$aIdx.tipo", data_get($aula, 'tipo')); @endphp
+                                        <label class="block min-h-5 leading-5 text-sm font-medium pr-2" data-duracao-label>
+                                            {{ in_array($tipoDuracao, ['texto', 'arquivo'], true) ? 'Tempo estimado (min)' : 'Duração (min)' }}
+                                        </label>
+                                        <input type="number" min="1" step="1" required
                                                name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][duracao_minutos]"
-                                               value="{{ old("modulos.$mIdx.aulas.$aIdx.duracao_minutos", $aula->duracao_minutos) }}"
+                                               data-required-field="1" data-label="Duração (min)"
+                                               value="{{ old("modulos.$mIdx.aulas.$aIdx.duracao_minutos", data_get($aula, 'duracao_minutos')) }}"
                                                class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: 15">
+                                        @error("modulos.$mIdx.aulas.$aIdx.duracao_minutos") <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
                                     </div>
 
                                     <div>
-                                        <label class="text-sm font-medium">Tipo</label>
-                                        @php $tipoSel = old("modulos.$mIdx.aulas.$aIdx.tipo", $aula->tipo); @endphp
+                                        <label class="block h-5 leading-5 text-sm font-medium text-center">Tipo</label>
+                                        @php $tipoSel = old("modulos.$mIdx.aulas.$aIdx.tipo", data_get($aula, 'tipo')); @endphp
                                         <select name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][tipo]"
+                                                data-required-field="1" data-label="Tipo da aula"
                                                 class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+                                            <option value="">Selecione o tipo</option>
                                             <option value="video"   @selected($tipoSel==='video')>Vídeo</option>
                                             <option value="texto"   @selected($tipoSel==='texto')>Texto</option>
 
                                             <option value="arquivo" @selected($tipoSel==='arquivo')>Arquivo</option>
                                         </select>
+                                        @error("modulos.$mIdx.aulas.$aIdx.tipo") <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
                                     </div>
 
                                     <div class="md:col-span-4">
@@ -285,7 +334,7 @@
                                             name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][conteudo_texto]"
                                             class="js-ckeditor mt-1 w-full rounded-md border border-slate-300"
                                             rows="5"
-                                        >{{ old("modulos.$mIdx.aulas.$aIdx.descricao", $aula->conteudo_texto) }}</textarea>
+                                        >{{ old("modulos.$mIdx.aulas.$aIdx.descricao", data_get($aula, 'conteudo_texto')) }}</textarea>
 
 
 
@@ -294,7 +343,7 @@
                                     <div class="md:col-span-3">
                                         <label class="text-sm font-medium">URL de Conteúdo (opcional)()</label>
                                         <input name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][conteudo_url]"
-                                               value="{{ old("modulos.$mIdx.aulas.$aIdx.conteudo_url", $aula->conteudo_url) }}"
+                                               value="{{ old("modulos.$mIdx.aulas.$aIdx.conteudo_url", data_get($aula, 'conteudo_url')) }}"
                                                class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="https://...">
                                     </div>
                                     {{-- NOVO: upload de vídeo opcional --}}
@@ -309,16 +358,18 @@
                                         </p>
                                     </div>
 
-                                    <div class="flex items-center gap-2">
-                                        @php
-                                            $lib = old("modulos.$mIdx.aulas.$aIdx.liberada_apos_anterior", $aula->liberada_apos_anterior ? '1' : null);
-                                        @endphp
-                                        <input type="checkbox"
-                                               name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][liberada_apos_anterior]"
-                                               value="1" @checked($lib == '1')
-                                               class="h-4 w-4 border border-slate-300">
-                                        <label class="text-sm">Liberar só após concluir aula anterior</label>
-                                    </div>
+                                    @if($aIdx > 0)
+                                        <div class="flex items-center gap-2">
+                                            @php
+                                                $lib = old("modulos.$mIdx.aulas.$aIdx.liberada_apos_anterior", data_get($aula, 'liberada_apos_anterior') ? '1' : null);
+                                            @endphp
+                                            <input type="checkbox"
+                                                   name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][liberada_apos_anterior]"
+                                                   value="1" @checked($lib == '1')
+                                                   class="h-4 w-4 border border-slate-300">
+                                            <label class="text-sm">Liberar só após concluir aula anterior</label>
+                                        </div>
+                                    @endif
 
                                     <div class="md:col-span-4 text-right">
                                         <button type="button" class="text-red-600 hover:underline"
@@ -333,9 +384,9 @@
                             <div class="flex items-center gap-2">
                                 <button type="button" class="btn btn-outline" data-action="add-aula">＋ Adicionar Aula</button>
 
-                                @if(isset($curso->id))
+                                @if(isset($curso->id) && $moduloId)
                                     <a
-                                        href="{{ route('prof.quizzes.create', ['curso' => $curso->id, 'modulo' => $modulo->id]) }}"
+                                        href="{{ route('prof.quizzes.create', ['curso' => $curso->id, 'modulo' => $moduloId]) }}"
                                         class="btn btn-soft"
                                         title="Criar prova para este módulo"
                                     >
@@ -499,6 +550,133 @@
             });
         }
 
+        // Máscara monetária (pt-BR) para preço/preço original.
+        function formatMoneyBr(raw) {
+            const digits = String(raw || '').replace(/\D/g, '');
+            if (!digits) return '';
+            const cents = parseInt(digits, 10);
+            return (cents / 100).toLocaleString('pt-BR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function parseMoneyBrToBackend(value) {
+            if (!value) return '';
+            const normalized = String(value)
+                .replace(/\./g, '')
+                .replace(',', '.')
+                .replace(/[^\d.]/g, '');
+            return normalized;
+        }
+
+        function bindMoneyMask(input) {
+            if (!input || input.dataset.moneyBound === '1') return;
+            input.dataset.moneyBound = '1';
+
+            input.value = formatMoneyBr(input.value);
+
+            input.addEventListener('input', () => {
+                input.value = formatMoneyBr(input.value);
+            });
+
+            input.addEventListener('blur', () => {
+                input.value = formatMoneyBr(input.value);
+            });
+        }
+
+        const moneyInputs = document.querySelectorAll('input[data-money-mask="true"]');
+        moneyInputs.forEach(bindMoneyMask);
+
+        const form = document.getElementById('cursoForm') || moneyInputs[0]?.closest('form');
+
+        function clearInlineErrors() {
+            document.querySelectorAll('[data-inline-error="1"]').forEach((el) => el.remove());
+            document.querySelectorAll('[data-structure-error="1"]').forEach((el) => el.remove());
+            document.querySelectorAll('[data-required-field="1"]').forEach((field) => {
+                field.classList.remove('border-red-500');
+            });
+        }
+
+        function addInlineError(field, message) {
+            const error = document.createElement('div');
+            error.className = 'text-red-600 text-xs mt-1';
+            error.dataset.inlineError = '1';
+            error.textContent = message;
+            field.classList.add('border-red-500');
+            field.insertAdjacentElement('afterend', error);
+        }
+
+        function getFieldValue(field) {
+            if (field._ckeditor) {
+                const html = field._ckeditor.getData() || '';
+                const text = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+                return text;
+            }
+            return String(field.value || '').trim();
+        }
+
+        function validateRequiredFields() {
+            clearInlineErrors();
+            let firstInvalid = null;
+            const modules = Array.from(modWrap.querySelectorAll('[data-modulo]'));
+
+            if (modules.length === 0) {
+                const err = document.createElement('div');
+                err.className = 'text-red-600 text-xs mt-2';
+                err.dataset.structureError = '1';
+                err.textContent = 'Adicione pelo menos 1 módulo para continuar.';
+                modWrap.insertAdjacentElement('afterend', err);
+                modWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+
+            for (const moduleCard of modules) {
+                const aulas = moduleCard.querySelectorAll('[data-aula]');
+                if (aulas.length === 0) {
+                    const err = document.createElement('div');
+                    err.className = 'text-red-600 text-xs mt-2';
+                    err.dataset.structureError = '1';
+                    err.textContent = 'Cada módulo precisa ter pelo menos 1 aula.';
+                    moduleCard.querySelector('.modulo-body')?.appendChild(err);
+                    setExpanded(moduleCard, true);
+                    moduleCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return false;
+                }
+            }
+
+            const requiredFields = Array.from(document.querySelectorAll('[data-required-field="1"]'))
+                .filter((field) => field.offsetParent !== null);
+
+            requiredFields.forEach((field) => {
+                const value = getFieldValue(field);
+                if (!value) {
+                    const label = field.dataset.label || 'Campo obrigatório';
+                    addInlineError(field, `${label} é obrigatório.`);
+                    if (!firstInvalid) firstInvalid = field;
+                    return;
+                }
+
+                if (field.type === 'number' && field.min !== '' && !Number.isNaN(Number(value))) {
+                    if (Number(value) < Number(field.min)) {
+                        const label = field.dataset.label || 'Campo obrigatório';
+                        addInlineError(field, `${label} deve ser maior ou igual a ${field.min}.`);
+                        if (!firstInvalid) firstInvalid = field;
+                    }
+                }
+            });
+
+            if (firstInvalid) {
+                const moduloCard = firstInvalid.closest('[data-modulo]');
+                if (moduloCard) setExpanded(moduloCard, true);
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+                return false;
+            }
+
+            return true;
+        }
+
         const modWrap = document.getElementById('modulosWrap');
         const addModuloBtn = document.getElementById('addModuloBtn');
         if (!modWrap) return;
@@ -562,7 +740,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
       <div class="md:col-span-2">
         <label class="text-sm font-medium">Título do Módulo</label>
-        <input name="modulos[${idx}][titulo]" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+        <input name="modulos[${idx}][titulo]" required data-required-field="1" data-label="Título do módulo" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
       </div>
       <div class="md:col-span-2">
         <label class="text-sm font-medium">Descrição do Módulo</label>
@@ -585,16 +763,17 @@
             return `
 <div class="aula-card grid grid-cols-1 md:grid-cols-4 gap-3 border rounded-md p-3 bg-white" data-aula="${aIdx}">
   <div class="md:col-span-2">
-    <label class="text-sm font-medium">Título da Aula</label>
-    <input name="modulos[${mIdx}][aulas][${aIdx}][titulo]" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: Criando componentes">
+    <label class="block h-5 leading-5 text-sm font-medium whitespace-nowrap">Título da Aula</label>
+    <input name="modulos[${mIdx}][aulas][${aIdx}][titulo]" required data-required-field="1" data-label="Título da aula" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: Criando componentes">
   </div>
   <div>
-    <label class="text-sm font-medium">Duração (min)</label>
-    <input type="number" min="0" step="1" name="modulos[${mIdx}][aulas][${aIdx}][duracao_minutos]" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: 15">
+    <label class="block min-h-5 leading-5 text-sm font-medium pr-2" data-duracao-label>Duração (min)</label>
+    <input type="number" min="1" step="1" required data-required-field="1" data-label="Duração (min)" name="modulos[${mIdx}][aulas][${aIdx}][duracao_minutos]" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: 15">
   </div>
   <div>
-    <label class="text-sm font-medium">Tipo</label>
-    <select name="modulos[${mIdx}][aulas][${aIdx}][tipo]" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+    <label class="block h-5 leading-5 text-sm font-medium text-center">Tipo</label>
+    <select name="modulos[${mIdx}][aulas][${aIdx}][tipo]" required data-required-field="1" data-label="Tipo da aula" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+      <option value="">Selecione o tipo</option>
       <option value="video">Vídeo</option>
       <option value="texto">Texto</option>
       <option value="arquivo">Arquivo</option>
@@ -613,10 +792,12 @@
     <label class="text-sm font-medium">URL do Conteúdo (opcional)</label>
     <input name="modulos[${mIdx}][aulas][${aIdx}][conteudo_url]" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="https://...">
   </div>
+  ${(Number(aIdx) > 0) ? `
   <div class="flex items-center gap-2">
     <input type="checkbox" name="modulos[${mIdx}][aulas][${aIdx}][liberada_apos_anterior]" value="1" class="h-4 w-4 border border-slate-300">
     <label class="text-sm">Liberar só após concluir aula anterior</label>
   </div>
+  ` : ``}
   <div class="md:col-span-4 text-right">
     <button type="button" class="text-red-600 hover:underline" data-action="remove-aula">Remover aula</button>
   </div>
@@ -628,6 +809,27 @@
             const any = card.querySelector('input[name^="modulos["], textarea[name^="modulos["], select[name^="modulos["]');
             const m = any?.name.match(/^modulos\[(\d+)\]/);
             return m ? parseInt(m[1],10) : null;
+        }
+
+        function refreshDuracaoLabels(root = document) {
+            root.querySelectorAll('[data-aula]').forEach((aulaCard) => {
+                const tipo = aulaCard.querySelector('select[name*="[tipo]"]');
+                const label = aulaCard.querySelector('[data-duracao-label]');
+                const input = aulaCard.querySelector('input[name*="[duracao_minutos]"]');
+                if (!tipo || !label || !input) return;
+
+                const isEstimado = ['texto', 'arquivo'].includes(tipo.value);
+                label.textContent = isEstimado ? 'Tempo estimado (min)' : 'Duração (min)';
+                input.dataset.label = isEstimado ? 'Tempo estimado (min)' : 'Duração (min)';
+            });
+        }
+
+        function bindTipoChangeHandlers(root = document) {
+            root.querySelectorAll('[data-aula] select[name*="[tipo]"]').forEach((select) => {
+                if (select.dataset.tipoBound === '1') return;
+                select.dataset.tipoBound = '1';
+                select.addEventListener('change', () => refreshDuracaoLabels(root));
+            });
         }
 
         // Delegação: add-aula / remove-aula
@@ -642,6 +844,8 @@
                 const next = cont.querySelectorAll('[data-aula]').length;
                 cont.insertAdjacentHTML('beforeend', aulaTemplate(mIdx, next));
                 window.initCKEditorsIn(cont); // inicializa CK nos novos textareas
+                bindTipoChangeHandlers(cont);
+                refreshDuracaoLabels(cont);
                 return;
             }
             const rm = e.target.closest('[data-action="remove-aula"]');
@@ -659,8 +863,24 @@
             bindModule(card);
             renumberModules();
             window.initCKEditorsIn(card); // inicializa CK no novo módulo
+            bindTipoChangeHandlers(card);
+            refreshDuracaoLabels(card);
         }
         addModuloBtn?.addEventListener('click', addModulo);
+
+        bindTipoChangeHandlers(document);
+        refreshDuracaoLabels(document);
+
+        form?.addEventListener('submit', (e) => {
+            if (!validateRequiredFields()) {
+                e.preventDefault();
+                return;
+            }
+
+            moneyInputs.forEach((input) => {
+                input.value = parseMoneyBrToBackend(input.value);
+            });
+        });
 
     })();
 </script>

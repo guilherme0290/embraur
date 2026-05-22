@@ -72,15 +72,14 @@ class QuizController extends Controller
     {
         // Agora o escopo é SEMPRE módulo neste fluxo
         $data = $r->validate([
-            'titulo'                  => ['required','string','max:255'],
-            'descricao'               => ['nullable','string'],
+            'titulo'                  => ['nullable','string','max:255'],
             'escopo'                  => ['required', Rule::in(['modulo'])],
             'curso_id'                => ['required','exists:cursos,id'],
             'modulo_id'               => ['required','exists:modulos,id'],
 
             'questoes'                => ['required','array','min:1'],
             'questoes.*.enunciado'    => ['required','string'],
-            'questoes.*.tipo'         => ['required', Rule::in(['multipla','texto'])],
+            'questoes.*.tipo'         => ['required', Rule::in(['multipla'])],
             'questoes.*.pontuacao'    => ['nullable','numeric','min:0.25'],
 
             'questoes.*.opcoes'             => ['nullable','array'],
@@ -95,13 +94,13 @@ class QuizController extends Controller
         }
 
         DB::transaction(function () use ($data) {
+            $tituloAuto = $this->resolveTituloAutomatico($data);
             $quiz = Quiz::create([
-                'titulo'          => $data['titulo'],
-                'descricao'       => $data['descricao'] ?? null,
+                'titulo'          => $tituloAuto,
                 'escopo'          => 'modulo',
                 'curso_id'        => (int)$data['curso_id'],
                 'modulo_id'       => (int)$data['modulo_id'],
-                'correcao_manual' => collect($data['questoes'])->contains(fn($q) => ($q['tipo'] ?? 'multipla') === 'texto'),
+                'correcao_manual' => false,
             ]);
 
             foreach ($data['questoes'] as $q) {
@@ -149,10 +148,10 @@ class QuizController extends Controller
         $this->normalizeCursoModulo($data);
 
         DB::transaction(function () use ($quiz, $data) {
+            $tituloAuto = $this->resolveTituloAutomatico($data);
             // Atualiza cabeçalho
             $quiz->fill([
-                'titulo'    => $data['titulo'],
-                'descricao' => $data['descricao'] ?? null,
+                'titulo'    => $tituloAuto,
                 'escopo'    => $data['escopo'],
                 'curso_id'  => $data['curso_id'] ?? null,
                 'modulo_id' => $data['modulo_id'] ?? null,
@@ -207,10 +206,8 @@ class QuizController extends Controller
                 }
             }
 
-            // Recalcula flag correcao_manual
-            $quiz->update([
-                'correcao_manual' => $quiz->questoes()->where('tipo', 'texto')->exists(),
-            ]);
+            // Com "multipla escolha" apenas, nunca há correção manual.
+            $quiz->update(['correcao_manual' => false]);
         });
 
         return redirect()->route('prof.quizzes.edit', $quiz)->with('success', 'Quiz atualizado!');
@@ -233,8 +230,7 @@ class QuizController extends Controller
     private function validatePayload(Request $r, bool $updating = false): array
     {
         return $r->validate([
-            'titulo'     => ['required','string','max:255'],
-            'descricao'  => ['nullable','string'],
+            'titulo'     => ['nullable','string','max:255'],
             'escopo'     => ['required', Rule::in(['curso','modulo'])],
             'curso_id'   => ['nullable','exists:cursos,id'],
             'modulo_id'  => ['nullable','exists:modulos,id'],
@@ -243,7 +239,7 @@ class QuizController extends Controller
             'questoes'                   => ['required','array','min:1'],
             'questoes.*.id'             => $updating ? ['nullable','integer','exists:quiz_questoes,id'] : ['nullable'],
             'questoes.*.enunciado'      => ['required','string'],
-            'questoes.*.tipo'           => ['required', Rule::in(['multipla','texto'])],
+            'questoes.*.tipo'           => ['required', Rule::in(['multipla'])],
             'questoes.*.pontuacao'      => ['nullable','numeric','min:0.25'],
 
             // OPÇÕES (para multipla)
@@ -296,5 +292,22 @@ class QuizController extends Controller
                 ]);
             }
         }
+    }
+
+    private function resolveTituloAutomatico(array $data): string
+    {
+        $curso = !empty($data['curso_id']) ? Cursos::find($data['curso_id']) : null;
+        $modulo = !empty($data['modulo_id']) ? Modulos::find($data['modulo_id']) : null;
+
+        if (($data['escopo'] ?? null) === 'modulo' && $modulo) {
+            $cursoTitulo = $curso?->titulo ?: 'Curso';
+            return "Prova - {$cursoTitulo} - {$modulo->titulo}";
+        }
+
+        if ($curso) {
+            return "Prova - {$curso->titulo}";
+        }
+
+        return 'Prova';
     }
 }

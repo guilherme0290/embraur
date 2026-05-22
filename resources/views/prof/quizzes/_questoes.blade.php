@@ -1,9 +1,6 @@
 <div class="rounded-xl border p-4">
-    <div class="flex items-center justify-between mb-3">
+    <div class="mb-3">
         <h2 class="font-semibold">Questões</h2>
-        {{-- Fallback com onclick + id para eventListener --}}
-        <button type="button" class="btn btn-outline h-9" id="btnAddQuestao"
-              >＋ Adicionar questão</button>
     </div>
 
     <div id="questoesWrap" class="space-y-4">
@@ -28,12 +25,9 @@
                     </div>
                     <div>
                         <label class="text-sm font-medium">Tipo *</label>
-                        @php $tipo = $questao['tipo'] ?? 'multipla'; @endphp
-                        <select name="questoes[{{ $qIdx }}][tipo]" data-role="tipo"
-                                class="mt-1 w-full h-10 rounded-md border px-3 bg-white">
-                            <option value="multipla" @selected($tipo==='multipla')>Múltipla Escolha</option>
-                            <option value="texto"    @selected($tipo==='texto')>Resposta em Texto</option>
-                        </select>
+                        <input type="text" value="Múltipla Escolha" readonly
+                               class="mt-1 w-full h-10 rounded-md border px-3 bg-slate-100 text-slate-700 cursor-not-allowed">
+                        <input type="hidden" name="questoes[{{ $qIdx }}][tipo]" value="multipla" data-role="tipo">
                     </div>
                     <div>
                         <label class="text-sm font-medium">Pontuação</label>
@@ -72,6 +66,10 @@
         @endforelse
 
     </div>
+
+    <div class="mt-4 flex justify-end">
+        <button type="button" class="btn btn-outline h-9" id="btnAddQuestao">＋ Adicionar questão</button>
+    </div>
 </div>
 
 <!-- Import do CKEditor (uma vez na página) -->
@@ -83,6 +81,35 @@
         if (window.__quizzes_bound) return;
         window.__quizzes_bound = true;
 
+        const UPLOAD_URL = "{{ route('prof.uploads.ckeditor') }}?_token={{ csrf_token() }}";
+        const htmlSupport = {
+            allow: [{ name: /^(video|source)$/, attributes: true, classes: true, styles: true }]
+        };
+        const mediaEmbed = {
+            previewsInData: true,
+            extraProviders: [
+                {
+                    name: 'localVideo',
+                    url: /^https?:\/\/[^ ]+\.(mp4|webm|ogg)$/i,
+                    html: match => {
+                        const url = match[0];
+                        const ext = (url.split('.').pop() || '').toLowerCase();
+                        const type = ext === 'ogv' ? 'ogg' : ext;
+                        return `<video controls style="max-width:100%;height:auto;"><source src="${url}" type="video/${type}"></video>`;
+                    }
+                }
+            ]
+        };
+        const toolbar = [
+            'undo','redo','|',
+            'heading','|',
+            'bold','italic','underline','link','|',
+            'bulletedList','numberedList','blockQuote','|',
+            'insertTable','imageUpload','mediaEmbed','|',
+            'alignment','outdent','indent','|',
+            'codeBlock','horizontalLine'
+        ];
+
         const wrap   = document.getElementById('questoesWrap');
         const addBtn = document.getElementById('btnAddQuestao');
 
@@ -93,11 +120,12 @@
             if (!textarea || editors.has(textarea)) return;
 
             ClassicEditor.create(textarea, {
-                toolbar: [
-                    'heading', '|',
-                    'bold','italic','underline','link','bulletedList','numberedList','blockQuote',
-                    '|', 'insertTable', 'undo','redo'
-                ]
+                language: 'pt-br',
+                toolbar: { items: toolbar },
+                ckfinder: { uploadUrl: UPLOAD_URL },
+                mediaEmbed,
+                htmlSupport,
+                removePlugins: ['CKBox','CKFinder','EasyImage']
             })
                 .then(editor => editors.set(textarea, editor))
                 .catch(console.error);
@@ -179,11 +207,9 @@
           </div>
           <div>
             <label class="text-sm font-medium">Tipo *</label>
-            <select name="questoes[${idx}][tipo]" data-role="tipo"
-                    class="mt-1 w-full h-10 rounded-md border px-3 bg-white">
-              <option value="multipla">Múltipla Escolha</option>
-              <option value="texto">Resposta em Texto</option>
-            </select>
+            <input type="text" value="Múltipla Escolha" readonly
+                   class="mt-1 w-full h-10 rounded-md border px-3 bg-slate-100 text-slate-700 cursor-not-allowed">
+            <input type="hidden" name="questoes[${idx}][tipo]" value="multipla" data-role="tipo">
           </div>
           <div>
             <label class="text-sm font-medium">Pontuação</label>
@@ -296,4 +322,3 @@
 
     })();
 </script>
-
