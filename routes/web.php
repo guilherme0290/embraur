@@ -187,6 +187,7 @@ Route::prefix('prof')->name('prof.')->group(function () {
         Route::get('cursos/criar', [CursoAdminController::class, 'create'])->name('cursos.create');
         Route::post('cursos', [CursoAdminController::class, 'store'])->name('cursos.store');
         Route::get('cursos/{curso}/editar', [CursoAdminController::class, 'edit'])->name('cursos.edit');
+        Route::get('cursos/{curso}/certificado/preview', [StudentCertificatesController::class, 'previewProfessor'])->name('cursos.certificado.preview');
         Route::put('cursos/{curso}', [CursoAdminController::class, 'update'])->name('cursos.update');
         Route::delete('cursos/{curso}', [CursoAdminController::class, 'destroy'])->name('cursos.destroy');
 

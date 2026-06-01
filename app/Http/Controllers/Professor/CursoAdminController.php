@@ -87,10 +87,10 @@ class CursoAdminController extends Controller
             'status'                => ['nullable', Rule::in(['rascunho','publicado','arquivado'])],
             'imagem_capa'           => ['required','image','max:4096'],
             // estrutura
-            'modulos'                              => ['required','array','min:1'],
+            'modulos'                              => ['nullable','array'],
             'modulos.*.titulo'                     => ['required','string','max:255'],
             'modulos.*.descricao'            => ['nullable','string'],
-            'modulos.*.aulas'                      => ['required','array','min:1'],
+            'modulos.*.aulas'                      => ['nullable','array'],
             'modulos.*.aulas.*.titulo'             => ['required','string','max:255'],
             'modulos.*.aulas.*.duracao_minutos'    => ['nullable','integer','min:0'],
             'modulos.*.aulas.*.tipo'               => ['required', Rule::in(['video','texto','quiz','arquivo'])],

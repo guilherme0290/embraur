@@ -52,6 +52,44 @@ class StudentCertificatesController extends Controller
         return view('site.certificado-verificar', compact('cert'));
     }
 
+    public function previewProfessor(Request $request, Cursos $curso)
+    {
+        abort_if((int) $curso->professor_id !== (int) session('prof_id'), 403);
+
+        $aluno = new User([
+            'nome_completo' => 'Aluno Exemplo',
+            'cpf' => '00000000000',
+            'tipo_usuario' => 'aluno',
+        ]);
+        $aluno->id = 0;
+
+        $matricula = new Matriculas([
+            'aluno_id' => 0,
+            'curso_id' => $curso->id,
+            'data_inicio' => now()->subDays(4),
+            'data_conclusao' => now(),
+            'status' => 'concluido',
+            'nota_final' => 10,
+        ]);
+        $matricula->setRelation('aluno', $aluno);
+        $matricula->setRelation('curso', $curso);
+
+        $cert = new Certificados([
+            'matricula_id' => 0,
+            'codigo_verificacao' => 'PREVIEW',
+            'data_emissao' => now(),
+            'valido' => true,
+        ]);
+        $cert->setRelation('matricula', $matricula);
+
+        $bytes = $this->renderCertificadoFPDF($curso, $matricula, $cert);
+
+        return response($bytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="previa-certificado-'.$curso->id.'.pdf"',
+        ]);
+    }
+
 
     private function findCertTemplatePath(string $relative): ?string
     {

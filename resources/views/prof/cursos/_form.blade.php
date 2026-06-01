@@ -49,7 +49,9 @@
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <div class="flex items-center gap-2 text-sm">
                 <a href="#sec-basicas" class="px-3 py-1 rounded-full border hover:bg-slate-50">1. Informações</a>
-                <a href="#sec-estrutura" class="px-3 py-1 rounded-full border hover:bg-slate-50">2. Estrutura</a>
+                @if(($mode ?? 'create') === 'edit')
+                    <a href="#sec-estrutura" class="px-3 py-1 rounded-full border hover:bg-slate-50">2. Estrutura</a>
+                @endif
             </div>
 
 
@@ -226,6 +228,7 @@
     </div>
 
     {{-- Card Estrutura do Curso --}}
+    @if(($mode ?? 'create') === 'edit')
     <div id="sec-estrutura" class="rounded-xl border bg-white p-5 shadow-sm">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold">📚 Estrutura do Curso</h2>
@@ -416,10 +419,19 @@
             <span class="text-xs text-slate-500">Use os botões acima para organizar os módulos</span>
         </div>
     </div>
+    @endif
 
     {{-- Barra de ações fixa no rodapé --}}
     <div class="sticky bottom-0 z-20 mt-6 bg-white/80 backdrop-blur border-t">
         <div class="max-w-5xl mx-auto px-1 py-3 flex justify-end gap-2">
+            @if(($mode ?? 'create') === 'edit' && isset($curso->id))
+                <a href="{{ route('prof.cursos.certificado.preview', $curso->id) }}"
+                   target="_blank"
+                   rel="noopener"
+                   class="btn btn-outline h-9">
+                    Pré-visualizar certificado
+                </a>
+            @endif
             <button type="submit" form="cursoForm" name="salvar" value="rascunho" class="btn btn-outline h-9">
                 Salvar como Rascunho
             </button>
@@ -625,12 +637,15 @@
             return String(field.value || '').trim();
         }
 
+        const modWrap = document.getElementById('modulosWrap');
+        const addModuloBtn = document.getElementById('addModuloBtn');
+
         function validateRequiredFields() {
             clearInlineErrors();
             let firstInvalid = null;
-            const modules = Array.from(modWrap.querySelectorAll('[data-modulo]'));
+            const modules = modWrap ? Array.from(modWrap.querySelectorAll('[data-modulo]')) : [];
 
-            if (modules.length === 0) {
+            if (modWrap && modules.length === 0) {
                 const err = document.createElement('div');
                 err.className = 'text-red-600 text-xs mt-2';
                 err.dataset.structureError = '1';
@@ -686,8 +701,17 @@
             return true;
         }
 
-        const modWrap = document.getElementById('modulosWrap');
-        const addModuloBtn = document.getElementById('addModuloBtn');
+        form?.addEventListener('submit', (e) => {
+            if (!validateRequiredFields()) {
+                e.preventDefault();
+                return;
+            }
+
+            moneyInputs.forEach((input) => {
+                input.value = parseMoneyBrToBackend(input.value);
+            });
+        });
+
         if (!modWrap) return;
 
         function renumberModules(){
@@ -848,17 +872,6 @@
             window.initCKEditorsIn(card); // inicializa CK no novo módulo
         }
         addModuloBtn?.addEventListener('click', addModulo);
-
-        form?.addEventListener('submit', (e) => {
-            if (!validateRequiredFields()) {
-                e.preventDefault();
-                return;
-            }
-
-            moneyInputs.forEach((input) => {
-                input.value = parseMoneyBrToBackend(input.value);
-            });
-        });
 
     })();
 </script>
