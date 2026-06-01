@@ -58,6 +58,11 @@
                     @csrf
                     <button type="submit" class="btn btn-primary">Sair</button>
                 </form>
+            @elseif(session('prof_id'))
+                <form id="logoutForm" action="{{ route('prof.logout') }}" method="POST" class="hidden md:inline-flex items-center">
+                    @csrf
+                    <button type="submit" class="btn btn-primary">Sair</button>
+                </form>
             @endif
         </div>
     </div>
@@ -176,6 +181,24 @@
 
 
 
+<script>
+    document.addEventListener('click', function(e){
+        const btn = e.target.closest('[data-password-toggle]');
+        if(!btn) return;
+
+        const field = btn.closest('.relative')?.querySelector('input[type="password"], input[type="text"]');
+        if(!field) return;
+
+        const visible = field.type === 'text';
+        field.type = visible ? 'password' : 'text';
+        btn.setAttribute('aria-label', visible ? 'Mostrar senha' : 'Ocultar senha');
+        btn.setAttribute('aria-pressed', visible ? 'false' : 'true');
+
+        const icon = btn.querySelector('i');
+        icon?.classList.toggle('ri-eye-line', visible);
+        icon?.classList.toggle('ri-eye-off-line', !visible);
+    });
+</script>
 </footer>
 </body>
 </html>

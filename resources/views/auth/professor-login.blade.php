@@ -30,7 +30,13 @@
                     <label class="text-sm">Senha</label>
                     <div class="relative">
                         <input type="password" name="password" class="w-full px-3 py-2 border rounded-md pr-10" placeholder="Sua senha">
-                        <i class="ri-eye-line absolute right-3 top-2.5 text-slate-400"></i>
+                        <button type="button"
+                                class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                                data-password-toggle
+                                aria-label="Mostrar senha"
+                                aria-pressed="false">
+                            <i class="ri-eye-line"></i>
+                        </button>
                     </div>
                 </div>
                 <label class="inline-flex items-center gap-2 text-sm">
