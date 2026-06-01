@@ -207,7 +207,6 @@
                                                class="flex items-center justify-between rounded border p-2 mb-1
                                                       {{ !$modLiberado ? 'opacity-60 pointer-events-none' : '' }} hover:bg-slate-50">
                                                 <span class="truncate text-sm">{{ $a->titulo }}</span>
-                                                <span class="text-xs text-slate-500">{{ $a->duracao_minutos }}min</span>
                                             </a>
                                         @endforeach
 

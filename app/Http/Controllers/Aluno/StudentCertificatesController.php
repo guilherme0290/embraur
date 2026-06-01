@@ -68,6 +68,17 @@ class StudentCertificatesController extends Controller
         return null;
     }
 
+    private function formatCargaHorariaHoras(Cursos $curso): string
+    {
+        $horas = ((int) ($curso->carga_horaria_total ?? 0)) / 60;
+
+        if ($horas <= 0) {
+            return '';
+        }
+
+        return rtrim(rtrim(number_format($horas, 2, ',', ''), '0'), ',');
+    }
+
     public function baixarFPDF(Cursos $curso, Request $request)
     {
         $alunoId   = auth('aluno')->id() ?? $request->session()->get('aluno_id');
@@ -124,6 +135,7 @@ class StudentCertificatesController extends Controller
             if ($phLabel) { $pdf->SetFont('Arial','',9); $pdf->SetTextColor(120,120,120); $pdf->SetXY($x,$y+($h/2)-3); $pdf->Cell($w,6,$phLabel,0,0,'C'); }
             return false;
         };
+        $cargaHorariaHoras = $this->formatCargaHorariaHoras($curso);
 
         // ========= PÁGINA 1 =========
         $front = $this->findCertTemplatePath($frontRel);
@@ -167,7 +179,7 @@ class StudentCertificatesController extends Controller
         $pdf->SetFont('Arial','B',14);
         $pdf->Cell(247, 6, $toPdf($curso->titulo), 0, 2, 'C');
         $pdf->SetFont('Arial','',12);
-        $pdf->Cell(247, 6, $toPdf('com carga horária de '.$curso->carga_horaria_total.' horas realizado no período:'), 0, 2, 'C');
+        $pdf->Cell(247, 6, $toPdf('com carga horária de '.$cargaHorariaHoras.' horas realizado no período:'), 0, 2, 'C');
 
         // Período (APENAS a linha "De XX a YY" dentro da caixa)
         $fmt = fn($d) => $d ? $d->format('d/m/Y') : '—';
@@ -269,7 +281,7 @@ class StudentCertificatesController extends Controller
         $pdf->SetFont('Arial','',11);
         $pdf->Cell(60, 6, $toPdf('CARGA TOTAL:'), 0, 0, 'L');
         $pdf->SetFont('Arial','B',11);
-        $pdf->Cell(30, 6, $toPdf(($curso->carga_horaria_total ?? '').'h'), 0, 1, 'L');
+        $pdf->Cell(30, 6, $toPdf($cargaHorariaHoras.'h'), 0, 1, 'L');
 
         $pdf->SetXY($statsX, $statsY+8);
         $pdf->SetFont('Arial','',11);
@@ -434,4 +446,3 @@ class StudentCertificatesController extends Controller
 
 
 }
-

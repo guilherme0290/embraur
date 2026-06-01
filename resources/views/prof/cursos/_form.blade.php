@@ -6,7 +6,15 @@
         $modulosFromOld = old('modulos');
         $modulosForm = is_array($modulosFromOld)
             ? $modulosFromOld
-            : ($curso->modulos ?? collect())->toArray();
+            : ($curso->modulos ?? collect());
+        $quizzesPorModulo = ($curso->modulos ?? collect())
+            ->filter(fn($modulo) => data_get($modulo, 'id'))
+            ->mapWithKeys(fn($modulo) => [data_get($modulo, 'id') => data_get($modulo, 'quiz')]);
+        $cargaHorariaHoras = old('carga_horaria_horas');
+        if ($cargaHorariaHoras === null) {
+            $minutosCurso = (int)($curso->carga_horaria_total ?? 0);
+            $cargaHorariaHoras = $minutosCurso > 0 ? rtrim(rtrim(number_format($minutosCurso / 60, 2, '.', ''), '0'), '.') : '';
+        }
     @endphp
 
     {{-- Estilos leves para separar módulos/aulas sem quebrar Tailwind --}}
@@ -146,6 +154,16 @@
                 @error('nivel') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
             </div>
             <div>
+                <label class="text-sm font-medium">Carga horária do curso (horas)</label>
+                <input name="carga_horaria_horas"
+                       value="{{ $cargaHorariaHoras }}"
+                       required
+                       data-required-field="1" data-label="Carga horária do curso"
+                       type="number" min="0.1" step="0.1" placeholder="Ex.: 40"
+                       class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
+                @error('carga_horaria_horas') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
+            </div>
+            <div>
             <label class="text-sm font-medium">Preço original (R$)</label>
             <input name="preco_original"
                    value="{{ old('preco_original', $curso->preco_original) }}"
@@ -224,7 +242,7 @@
                     $moduloTitulo = data_get($modulo, 'titulo');
                     $moduloDescricao = data_get($modulo, 'descricao');
                     $aulasModulo = data_get($modulo, 'aulas', []);
-                    $quizModulo = is_object($modulo) ? $modulo->quiz : null;
+                    $quizModulo = data_get($modulo, 'quiz') ?: $quizzesPorModulo->get($moduloId);
                 @endphp
                 <div class="rounded-lg border p-0 overflow-hidden" data-modulo="{{ $mIdx }}">
                     {{-- Cabeçalho do módulo (colapsável) --}}
@@ -299,18 +317,9 @@
                                         @error("modulos.$mIdx.aulas.$aIdx.titulo") <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
                                     </div>
 
-                                    <div>
-                                        @php $tipoDuracao = old("modulos.$mIdx.aulas.$aIdx.tipo", data_get($aula, 'tipo')); @endphp
-                                        <label class="block min-h-5 leading-5 text-sm font-medium pr-2" data-duracao-label>
-                                            {{ in_array($tipoDuracao, ['texto', 'arquivo'], true) ? 'Tempo estimado (min)' : 'Duração (min)' }}
-                                        </label>
-                                        <input type="number" min="1" step="1" required
-                                               name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][duracao_minutos]"
-                                               data-required-field="1" data-label="Duração (min)"
-                                               value="{{ old("modulos.$mIdx.aulas.$aIdx.duracao_minutos", data_get($aula, 'duracao_minutos')) }}"
-                                               class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: 15">
-                                        @error("modulos.$mIdx.aulas.$aIdx.duracao_minutos") <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
-                                    </div>
+                                    <input type="hidden"
+                                           name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][duracao_minutos]"
+                                           value="{{ old("modulos.$mIdx.aulas.$aIdx.duracao_minutos", data_get($aula, 'duracao_minutos', 0)) }}">
 
                                     <div>
                                         <label class="block h-5 leading-5 text-sm font-medium text-center">Tipo</label>
@@ -766,10 +775,7 @@
     <label class="block h-5 leading-5 text-sm font-medium whitespace-nowrap">Título da Aula</label>
     <input name="modulos[${mIdx}][aulas][${aIdx}][titulo]" required data-required-field="1" data-label="Título da aula" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: Criando componentes">
   </div>
-  <div>
-    <label class="block min-h-5 leading-5 text-sm font-medium pr-2" data-duracao-label>Duração (min)</label>
-    <input type="number" min="1" step="1" required data-required-field="1" data-label="Duração (min)" name="modulos[${mIdx}][aulas][${aIdx}][duracao_minutos]" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: 15">
-  </div>
+  <input type="hidden" name="modulos[${mIdx}][aulas][${aIdx}][duracao_minutos]" value="0">
   <div>
     <label class="block h-5 leading-5 text-sm font-medium text-center">Tipo</label>
     <select name="modulos[${mIdx}][aulas][${aIdx}][tipo]" required data-required-field="1" data-label="Tipo da aula" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 bg-white focus:border-slate-400 focus:ring-2 focus:ring-slate-200">
@@ -811,27 +817,6 @@
             return m ? parseInt(m[1],10) : null;
         }
 
-        function refreshDuracaoLabels(root = document) {
-            root.querySelectorAll('[data-aula]').forEach((aulaCard) => {
-                const tipo = aulaCard.querySelector('select[name*="[tipo]"]');
-                const label = aulaCard.querySelector('[data-duracao-label]');
-                const input = aulaCard.querySelector('input[name*="[duracao_minutos]"]');
-                if (!tipo || !label || !input) return;
-
-                const isEstimado = ['texto', 'arquivo'].includes(tipo.value);
-                label.textContent = isEstimado ? 'Tempo estimado (min)' : 'Duração (min)';
-                input.dataset.label = isEstimado ? 'Tempo estimado (min)' : 'Duração (min)';
-            });
-        }
-
-        function bindTipoChangeHandlers(root = document) {
-            root.querySelectorAll('[data-aula] select[name*="[tipo]"]').forEach((select) => {
-                if (select.dataset.tipoBound === '1') return;
-                select.dataset.tipoBound = '1';
-                select.addEventListener('change', () => refreshDuracaoLabels(root));
-            });
-        }
-
         // Delegação: add-aula / remove-aula
         modWrap.addEventListener('click', (e)=>{
             const add = e.target.closest('[data-action="add-aula"]');
@@ -844,8 +829,6 @@
                 const next = cont.querySelectorAll('[data-aula]').length;
                 cont.insertAdjacentHTML('beforeend', aulaTemplate(mIdx, next));
                 window.initCKEditorsIn(cont); // inicializa CK nos novos textareas
-                bindTipoChangeHandlers(cont);
-                refreshDuracaoLabels(cont);
                 return;
             }
             const rm = e.target.closest('[data-action="remove-aula"]');
@@ -863,13 +846,8 @@
             bindModule(card);
             renumberModules();
             window.initCKEditorsIn(card); // inicializa CK no novo módulo
-            bindTipoChangeHandlers(card);
-            refreshDuracaoLabels(card);
         }
         addModuloBtn?.addEventListener('click', addModulo);
-
-        bindTipoChangeHandlers(document);
-        refreshDuracaoLabels(document);
 
         form?.addEventListener('submit', (e) => {
             if (!validateRequiredFields()) {

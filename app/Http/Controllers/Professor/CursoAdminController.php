@@ -59,6 +59,7 @@ class CursoAdminController extends Controller
             'titulo' => 'título do curso',
             'descricao_completa' => 'descrição completa',
             'nivel' => 'nível',
+            'carga_horaria_horas' => 'carga horária do curso',
             'nota_minima_aprovacao' => 'nota mínima para aprovação',
             'preco' => 'preço',
             'preco_original' => 'preço original',
@@ -77,7 +78,7 @@ class CursoAdminController extends Controller
             //'descricao_curta'       => ['nullable','string'],
             'descricao_completa'    => ['required','string'],
             'nivel'                 => ['required', Rule::in(['todos','iniciante','intermediario','avancado'])],
-            'carga_horaria_horas'   => ['nullable','numeric','min:0'], // campo da tela (horas)
+            'carga_horaria_horas'   => ['required','numeric','min:0.1'], // campo da tela (horas)
             'maximo_alunos'         => ['nullable','integer','min:1'],
             'preco'                 => ['required','numeric','min:0'],
             'preco_original'        => ['required','numeric','min:0'],
@@ -91,7 +92,7 @@ class CursoAdminController extends Controller
             'modulos.*.descricao'            => ['nullable','string'],
             'modulos.*.aulas'                      => ['required','array','min:1'],
             'modulos.*.aulas.*.titulo'             => ['required','string','max:255'],
-            'modulos.*.aulas.*.duracao_minutos'    => ['required','integer','min:1'],
+            'modulos.*.aulas.*.duracao_minutos'    => ['nullable','integer','min:0'],
             'modulos.*.aulas.*.tipo'               => ['required', Rule::in(['video','texto','quiz','arquivo'])],
             'modulos.*.aulas.*.conteudo_url'       => ['nullable','string','max:255'],
             'modulos.*.aulas.*.conteudo_texto'     => ['nullable','string'],
@@ -195,6 +196,7 @@ class CursoAdminController extends Controller
             'categoria',
             'modulos' => fn($q) => $q->orderBy('ordem'),
             'modulos.aulas' => fn($q) => $q->orderBy('ordem'),
+            'modulos.quiz',
         ]);
 
         $quizzesDoCurso = Quiz::where('curso_id', $curso->id)->get(['id','titulo']);
@@ -223,6 +225,7 @@ class CursoAdminController extends Controller
             'titulo' => 'título do curso',
             'descricao_completa' => 'descrição completa',
             'nivel' => 'nível',
+            'carga_horaria_horas' => 'carga horária do curso',
             'nota_minima_aprovacao' => 'nota mínima para aprovação',
             'preco' => 'preço',
             'preco_original' => 'preço original',
@@ -241,6 +244,7 @@ class CursoAdminController extends Controller
             //'descricao_curta'       => ['nullable','string'],
             'descricao_completa'    => ['required','string'],
             'nivel'                 => ['required', Rule::in(['todos','iniciante','intermediario','avancado'])],
+            'carga_horaria_horas'   => ['required','numeric','min:0.1'],
             'preco'                 => ['required','numeric','min:0'],
             'preco_original'        => ['required','numeric','min:0'],
             'nota_minima_aprovacao' => ['required','numeric','min:0','max:10'],
@@ -256,7 +260,7 @@ class CursoAdminController extends Controller
             'modulos.*.aulas'                      => ['required','array','min:1'],
             'modulos.*.aulas.*.id'                 => ['nullable','exists:aulas,id'],
             'modulos.*.aulas.*.titulo'             => ['required','string','max:255'],
-            'modulos.*.aulas.*.duracao_minutos'    => ['required','integer','min:1'],
+            'modulos.*.aulas.*.duracao_minutos'    => ['nullable','integer','min:0'],
             'modulos.*.aulas.*.tipo'               => ['required', Rule::in(['video','texto','quiz','arquivo'])],
             'modulos.*.aulas.*.conteudo_url'       => ['nullable','string','max:255'],
             'modulos.*.aulas.*.conteudo_texto'       => ['nullable','string'],

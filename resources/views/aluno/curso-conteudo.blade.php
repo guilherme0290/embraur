@@ -107,7 +107,6 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="font-semibold">{{ $aula->titulo }}</h2>
-                            <div class="text-xs text-slate-500">{{ $aula->duracao_minutos }}min</div>
                         </div>
 
                         <div class="flex items-center gap-2">
@@ -209,9 +208,8 @@
                             <div class="mt-2">
                                 @foreach($m->aulas->sortBy('ordem') as $a)
                                     <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $m->id, $a->id]) }}"
-                                       class="flex items-center justify-between rounded border p-2 mb-1 {{ !$modLiberado ? 'opacity-60 pointer-events-none' : '' }} {{ (int)$a->id === (int)$aula->id ? 'bg-green-50 border-green-200' : 'hover:bg-slate-50' }}">
+                                        class="flex items-center justify-between rounded border p-2 mb-1 {{ !$modLiberado ? 'opacity-60 pointer-events-none' : '' }} {{ (int)$a->id === (int)$aula->id ? 'bg-green-50 border-green-200' : 'hover:bg-slate-50' }}">
                                         <span class="truncate text-sm">{{ $a->titulo }}</span>
-                                        <span class="text-xs text-slate-500">{{ $a->duracao_minutos }}min</span>
                                     </a>
                                 @endforeach
 
@@ -467,4 +465,3 @@
         }
     })();
 </script>
-

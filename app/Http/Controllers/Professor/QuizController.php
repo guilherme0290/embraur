@@ -51,17 +51,14 @@ class QuizController extends Controller
         $curso  = Cursos::findOrFail($r->query('curso'));
         $modulo = Modulos::where('curso_id', $curso->id)->findOrFail($r->query('modulo'));
 
-        // pega o quiz desse módulo já com as questões (e opções, se quiser)
-        $quiz = $modulo->quiz()->with('questoes.opcoes')->get();
+        // Cada módulo trabalha com uma única prova neste fluxo.
+        $quiz = $modulo->quiz()->with('questoes.opcoes')->first();
 
-        if(empty($quiz->questoes)){
-            $questoes = collect();
-        }else{
-            $questoes = $quiz->questoes;
+        if ($quiz) {
+            return redirect()->route('prof.quizzes.edit', $quiz);
         }
 
-
-
+        $questoes = collect();
 
         return view('prof.quizzes.create', compact('curso','modulo','quiz','questoes'));
     }
@@ -85,7 +82,7 @@ class QuizController extends Controller
             'questoes.*.opcoes'             => ['nullable','array'],
             'questoes.*.opcoes.*.texto'     => ['required_with:questoes.*.opcoes','string','max:255'],
             'questoes.*.opcoes.*.correta'   => ['nullable','boolean'],
-        ]);
+        ], $this->validationMessages(), $this->validationAttributes());
 
         // Coerência módulo⇄curso
         $mod = Modulos::findOrFail($data['modulo_id']);
@@ -247,7 +244,47 @@ class QuizController extends Controller
             'questoes.*.opcoes.*.id'            => $updating ? ['nullable','integer','exists:quiz_opcoes,id'] : ['nullable'],
             'questoes.*.opcoes.*.texto'         => ['required_with:questoes.*.opcoes','string','max:255'],
             'questoes.*.opcoes.*.correta'       => ['nullable','boolean'],
-        ]);
+        ], $this->validationMessages(), $this->validationAttributes());
+    }
+
+    private function validationMessages(): array
+    {
+        return [
+            'required' => 'O campo :attribute é obrigatório.',
+            'required_with' => 'O campo :attribute é obrigatório quando as opções da questão forem informadas.',
+            'string' => 'O campo :attribute deve ser um texto.',
+            'array' => 'O campo :attribute deve ser uma lista.',
+            'numeric' => 'O campo :attribute deve ser um número.',
+            'integer' => 'O campo :attribute deve ser um número inteiro.',
+            'boolean' => 'O campo :attribute deve ser verdadeiro ou falso.',
+            'max' => 'O campo :attribute não pode ter mais que :max caracteres.',
+            'min' => 'O campo :attribute deve ser no mínimo :min.',
+            'exists' => 'O :attribute selecionado é inválido.',
+            'in' => 'O :attribute selecionado é inválido.',
+            'questoes.required' => 'Adicione pelo menos uma questão à prova.',
+            'questoes.min' => 'Adicione pelo menos uma questão à prova.',
+            'questoes.*.enunciado.required' => 'Informe o enunciado da questão.',
+            'questoes.*.opcoes.*.texto.required_with' => 'Informe o texto da opção da questão.',
+        ];
+    }
+
+    private function validationAttributes(): array
+    {
+        return [
+            'titulo' => 'título',
+            'escopo' => 'tipo da prova',
+            'curso_id' => 'curso',
+            'modulo_id' => 'módulo',
+            'questoes' => 'questões',
+            'questoes.*.id' => 'questão',
+            'questoes.*.enunciado' => 'enunciado da questão',
+            'questoes.*.tipo' => 'tipo da questão',
+            'questoes.*.pontuacao' => 'pontuação da questão',
+            'questoes.*.opcoes' => 'opções da questão',
+            'questoes.*.opcoes.*.id' => 'opção',
+            'questoes.*.opcoes.*.texto' => 'texto da opção',
+            'questoes.*.opcoes.*.correta' => 'opção correta',
+        ];
     }
 
     /** Carrega cursos e um mapa [curso_id => módulos] para popular os selects */

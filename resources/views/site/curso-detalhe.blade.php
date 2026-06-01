@@ -86,7 +86,6 @@
                                                             <div class="text-xs text-slate-500 truncate">{!! $a->descricao !!}</div>
                                                         @endif
                                                     </div>
-                                                    <div class="text-xs text-slate-500">{{ $a->duracao_minutos }} min</div>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -359,4 +358,3 @@
     </script>
 
 @endsection
-

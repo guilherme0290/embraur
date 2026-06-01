@@ -180,9 +180,6 @@
                                     <li class="flex items-center gap-2 text-sm">
                                         <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                                         <span class="text-slate-600">{{ $aula->titulo }}</span>
-                                        @if(!empty($aula->duracao_minutos))
-                                            <span class="ml-auto text-slate-400">{{ $aula->duracao_minutos }}min</span>
-                                        @endif
                                     </li>
                                 @endforeach
 

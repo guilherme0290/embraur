@@ -27,7 +27,7 @@
                                 </select>
                                 <input name="url_video" value="{{ $aula->url_video }}" placeholder="URL do vídeo" class="h-8 rounded border-slate-300 px-2 w-52">
                                 <input type="file" name="arquivo" class="h-8">
-                                <input type="number" name="duracao" value="{{ $aula->duracao }}" placeholder="min" class="h-8 w-20 rounded border-slate-300 px-2">
+                                <input type="hidden" name="duracao_minutos" value="{{ $aula->duracao_minutos ?? 0 }}">
                                 <label class="text-sm inline-flex items-center gap-2">
                                     <input type="checkbox" name="preview" value="1" {{ $aula->preview ? 'checked':'' }}>
                                     Preview
@@ -62,7 +62,7 @@
                     </select>
                     <input name="url_video" class="w-full h-10 rounded-md border-slate-300" placeholder="URL do vídeo (se aplicável)">
                     <input type="file" name="arquivo" class="w-full">
-                    <input type="number" name="duracao" class="w-full h-10 rounded-md border-slate-300" placeholder="Duração (min)">
+                    <input type="hidden" name="duracao_minutos" value="0">
                     <label class="inline-flex items-center gap-2 text-sm"><input type="checkbox" name="preview" value="1"> Preview grátis</label>
                     <button class="btn-primary h-10 w-full rounded-md">Adicionar aula</button>
                 </form>

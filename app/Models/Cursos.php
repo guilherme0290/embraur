@@ -12,7 +12,7 @@ class Cursos extends Model
     protected $table = 'cursos';
     public $timestamps = false; // suas migrations não usam created_at/updated_at
 
-    protected $appends = ['imagem_capa_url'];
+    protected $appends = ['imagem_capa_url', 'carga_horaria'];
 
     protected $fillable = [
         'professor_id',
@@ -110,6 +110,19 @@ class Cursos extends Model
             return  Storage::url('cursos/capas/image_placeholder.jpg');
         }
         return $this->imagem_capa ? Storage::url($this->imagem_capa) : null;
+    }
+
+    public function getCargaHorariaAttribute(): ?string
+    {
+        $minutos = (int) ($this->carga_horaria_total ?? 0);
+
+        if ($minutos <= 0) {
+            return null;
+        }
+
+        $horas = $minutos / 60;
+
+        return rtrim(rtrim(number_format($horas, 2, ',', ''), '0'), ',');
     }
 
     /* ------------------------- HELPERS/CONSULTAS ÚTEIS ------------------------ */
