@@ -339,79 +339,74 @@
     </button>
 
     <div id="miniCartPanel"
-         class="fixed bottom-20 right-5 z-40 w-[340px] max-h-[70vh] overflow-auto rounded-2xl
-            border border-slate-200/70 bg-white/90 backdrop-blur-md shadow-2xl hidden">
-
-
-        <div id="miniCartPanel"
-             class="fixed bottom-20 right-5 z-40 w-[320px] max-h-[70vh] overflow-auto rounded-xl border bg-white shadow-lg hidden">
-            <div class="p-4 border-b flex items-center justify-between">
-                <div class="font-semibold">Seu carrinho</div>
-                <button class="text-slate-500 hover:text-slate-700" onclick="document.getElementById('miniCartPanel').classList.add('hidden')">✕</button>
-            </div>
-
-            <div class="p-3">
-                @if($miniCart->isEmpty())
-                    <div class="text-sm text-slate-500 p-3">Seu carrinho está vazio.</div>
-                @else
-                    <ul class="space-y-2">
-                        @foreach($miniCart as $it)
-                            <li class="flex items-center justify-between rounded border p-2">
-                                <div class="pr-2">
-                                    <div class="text-sm font-medium truncate max-w-[180px]">{{ $it['titulo'] }}</div>
-                                    <div class="text-xs text-slate-500">R$ {{ number_format($it['preco'] ?? 0,2,',','.') }}</div>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <form method="post" action="{{ route('checkout.cart.remove', $it['id']) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="text-xs text-red-600 hover:underline">remover</button>
-                                    </form>
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-
-                    <div class="mt-3 border-t pt-3 flex items-center justify-between">
-                        <span class="text-sm text-slate-600">Total</span>
-                        <span class="font-semibold">R$ {{ number_format($miniTotal,2,',','.') }}</span>
-                    </div>
-
-                    <div class="mt-3 grid grid-cols-2 gap-2">
-                        <a href="{{ route('checkout.cart') }}" class="btn btn-outline text-center">Ver carrinho</a>
-                        <a href="{{ route('checkout.cart') }}" class="btn btn-primary text-center">Finalizar</a>
-                    </div>
-                @endif
-            </div>
+         class="fixed bottom-20 right-5 z-40 w-[320px] max-h-[70vh] overflow-auto rounded-xl border bg-white shadow-lg hidden">
+        <div class="p-4 border-b flex items-center justify-between">
+            <div class="font-semibold">Seu carrinho</div>
+            <button class="text-slate-500 hover:text-slate-700" onclick="document.getElementById('miniCartPanel').classList.add('hidden')">✕</button>
         </div>
 
-        <script>
-            (function(){
-                const btn = document.getElementById('miniCartToggle');
-                const panel = document.getElementById('miniCartPanel');
-                btn?.addEventListener('click', ()=> panel.classList.toggle('hidden'));
+        <div class="p-3">
+            @if($miniCart->isEmpty())
+                <div class="text-sm text-slate-500 p-3">Seu carrinho está vazio.</div>
+            @else
+                <ul class="space-y-2">
+                    @foreach($miniCart as $it)
+                        <li class="flex items-center justify-between rounded border p-2">
+                            <div class="pr-2">
+                                <div class="text-sm font-medium truncate max-w-[180px]">{{ $it['titulo'] }}</div>
+                                <div class="text-xs text-slate-500">R$ {{ number_format($it['preco'] ?? 0,2,',','.') }}</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <form method="post" action="{{ route('checkout.cart.remove', $it['id']) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-xs text-red-600 hover:underline">remover</button>
+                                </form>
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
 
-                async function refreshCartBadge() {
-                    try {
-                        const res = await fetch("{{ route('checkout.cart.count') }}", { headers: {'Accept':'application/json'}, cache: 'no-store' });
-                        const data = await res.json();
-                        const n = Number(data?.count || 0);
-                        document.querySelectorAll('[data-cart-badge]').forEach(b=>{
-                            b.textContent = String(n);
-                            b.classList.toggle('hidden', n === 0);
-                        });
-                    } catch(e){}
-                }
-                refreshCartBadge();
-            })();
-        </script>
-        @endsection
+                <div class="mt-3 border-t pt-3 flex items-center justify-between">
+                    <span class="text-sm text-slate-600">Total</span>
+                    <span class="font-semibold">R$ {{ number_format($miniTotal,2,',','.') }}</span>
+                </div>
 
-        <style>
-            @keyframes parceiros-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-            .parceiros-track{ width:max-content; animation-name:parceiros-scroll; animation-timing-function:linear; animation-iteration-count:infinite; will-change:transform; }
-            .parceiros-track:hover{ animation-play-state:paused; }
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                    <a href="{{ route('checkout.cart') }}" class="btn btn-outline text-center">Ver carrinho</a>
+                    <a href="{{ route('checkout.cart') }}" class="btn btn-primary text-center">Finalizar</a>
+                </div>
+            @endif
+        </div>
+    </div>
 
-            /* Botão primário: glow discreto */
-            .btn.btn-primary:hover{ box-shadow:0 10px 30px -10px rgba(96,109,80,.45); }
-        </style>
+    <script>
+        (function(){
+            const btn = document.getElementById('miniCartToggle');
+            const panel = document.getElementById('miniCartPanel');
+            btn?.addEventListener('click', ()=> panel.classList.toggle('hidden'));
+
+            async function refreshCartBadge() {
+                try {
+                    const res = await fetch("{{ route('checkout.cart.count') }}", { headers: {'Accept':'application/json'}, cache: 'no-store' });
+                    const data = await res.json();
+                    const n = Number(data?.count || 0);
+                    document.querySelectorAll('[data-cart-badge]').forEach(b=>{
+                        b.textContent = String(n);
+                        b.classList.toggle('hidden', n === 0);
+                    });
+                } catch(e){}
+            }
+            refreshCartBadge();
+        })();
+    </script>
+
+    <style>
+        @keyframes parceiros-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+        .parceiros-track{ width:max-content; animation-name:parceiros-scroll; animation-timing-function:linear; animation-iteration-count:infinite; will-change:transform; }
+        .parceiros-track:hover{ animation-play-state:paused; }
+
+        /* Botão primário: glow discreto */
+        .btn.btn-primary:hover{ box-shadow:0 10px 30px -10px rgba(96,109,80,.45); }
+    </style>
+@endsection

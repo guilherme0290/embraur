@@ -54,9 +54,9 @@
             <a href="{{ route('portal.professor') }}" class="hidden sm:inline-flex btn btn-outline">PORTAL DO PROFESSOR</a>
 
             @if(session('aluno_id'))
-                <form id="logoutForm" action="{{ route('aluno.logout') }}" method="POST" class="hidden md:inline-flex">
+                <form id="logoutForm" action="{{ route('aluno.logout') }}" method="POST" class="hidden md:inline-flex items-center">
                     @csrf
-                    <button type="submit" class="btn-primary h-9 px-4 rounded-md">Sair</button>
+                    <button type="submit" class="btn btn-primary">Sair</button>
                 </form>
             @endif
         </div>
