@@ -102,11 +102,13 @@ class CourseCompletionService
 
             if (!$t) continue; // sem tentativa para este quiz
 
-            // Normalização de nota (0–10)
+            // Normalização de nota (0–10). As tentativas guardam pontos brutos.
             if (isset($t->nota_normalizada_0a10)) {
-                $nota = (float)$t->nota_normalizada_0a10;
+                $nota = (float) $t->nota_normalizada_0a10;
+            } elseif (isset($t->nota_obtida, $t->nota_maxima) && (float) $t->nota_maxima > 0) {
+                $nota = ((float) $t->nota_obtida / (float) $t->nota_maxima) * 10.0;
             } elseif (isset($t->nota_obtida)) {
-                $nota = (float)$t->nota_obtida;
+                $nota = (float) $t->nota_obtida;
             } elseif (isset($t->pontuacao_obtida) && isset($t->pontuacao_max) && $t->pontuacao_max > 0) {
                 $nota = (float) (($t->pontuacao_obtida / $t->pontuacao_max) * 10.0);
             } else {

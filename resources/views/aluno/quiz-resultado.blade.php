@@ -5,6 +5,7 @@
 @section('content')
     @php
         $aprovado = (bool) $tentativa->aprovado;
+        $matricula = $tentativa->matricula;
         $notaFmt  = number_format($nota10, 1, ',', '');
         $minFmt   = number_format((float)$notaMinima, 1, ',', '');
 
@@ -22,7 +23,7 @@
         $quizIds = $curso->modulos->pluck('quiz.id')->filter()->values();
         $ultimas = collect();
         if ($quizIds->isNotEmpty()) {
-            $ultimas = \App\Models\QuizTentativa::where('aluno_id', $tentativa->aluno_id)
+            $ultimas = \App\Models\QuizTentativa::where('matricula_id', $matricula->id)
                 ->whereIn('quiz_id', $quizIds)
                 ->orderByDesc('id')
                 ->get()
@@ -37,10 +38,10 @@
             <div class="text-slate-600 flex items-center gap-2">
                 <a href="{{ route('aluno.dashboard') }}" class="hover:underline">&larr; Voltar ao Dashboard</a>
                 <span class="text-slate-400">/</span>
-                <a href="{{ route('aluno.curso.conteudo', $curso->id) }}" class="hover:underline">{{ $curso->titulo }}</a>
+                <a href="{{ route('aluno.curso.conteudo', [$curso->id, 'matricula' => $matricula->id]) }}" class="hover:underline">{{ $curso->titulo }}</a>
             </div>
 
-            <a href="{{ route('aluno.curso.conteudo', $curso->id) }}"
+            <a href="{{ route('aluno.curso.conteudo', [$curso->id, 'matricula' => $matricula->id]) }}"
                class="text-slate-600 hover:underline">← Voltar ao curso</a>
         </div>
 
@@ -77,7 +78,7 @@
                             <div class="mt-4">
                                 @if(!empty($proximoModulo) && !empty($primeiraAulaProx))
                                     {{-- Leva direto para a 1ª aula do próximo módulo --}}
-                                    <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $proximoModulo->id, $primeiraAulaProx->id]) }}"
+                                    <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $proximoModulo->id, $primeiraAulaProx->id, 'matricula' => $matricula->id]) }}"
                                        class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                                         Continuar curso
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -86,7 +87,7 @@
                                     </a>
                                 @else
                                     {{-- Se não há próximo módulo/aula, volta para o sumário do curso --}}
-                                    <a href="{{ route('aluno.curso.conteudo', $curso->id) }}"
+                                    <a href="{{ route('aluno.curso.conteudo', [$curso->id, 'matricula' => $matricula->id]) }}"
                                        class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                                         Voltar ao curso
                                     </a>
@@ -97,11 +98,11 @@
                                 Você não atingiu a nota mínima. Revise o conteúdo e tente novamente.
                             </p>
                             <div class="mt-4 flex items-center gap-3">
-                                <a href="{{ route('aluno.curso.conteudo', $curso->id) }}"
+                                <a href="{{ route('aluno.curso.conteudo', [$curso->id, 'matricula' => $matricula->id]) }}"
                                    class="px-4 py-2 rounded border text-slate-700 hover:bg-slate-100">
                                     Revisar conteúdo
                                 </a>
-                                <a href="{{ route('aluno.quiz.refazer', [$curso->id, $quiz->id]) }}"
+                                <a href="{{ route('aluno.quiz.refazer', [$curso->id, $quiz->id, 'matricula' => $matricula->id]) }}"
                                    class="px-4 py-2 rounded text-white bg-slate-700 hover:bg-slate-800">
                                     Refazer prova
                                 </a>
@@ -186,7 +187,7 @@
                                 @if($qz)
                                     <li class="flex items-center gap-2 text-sm">
                                         <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                                        <a href="{{ route('aluno.quiz.show', [$curso->id, $qz->id]) }}"
+                                        <a href="{{ route('aluno.quiz.show', [$curso->id, $qz->id, 'matricula' => $matricula->id]) }}"
                                            class="text-slate-800 font-medium hover:underline">Prova do {{ $m->titulo }}</a>
                                         <span class="ml-auto text-xs
                                         @if($badge==='OK') text-green-700 @elseif($badge==='Reprovado') text-rose-700 @else text-slate-500 @endif">

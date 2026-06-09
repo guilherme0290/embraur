@@ -18,7 +18,11 @@ class AulaProgressoController extends Controller
         abort_if(!$alunoId, 403);
 
         $cursoId = $aula->modulo->curso_id;
-        $matricula = Matriculas::where('aluno_id',$alunoId)->where('curso_id',$cursoId)->firstOrFail();
+        $matricula = Matriculas::atualDoAlunoCurso(
+            (int) $alunoId,
+            (int) $cursoId,
+            $rq->integer('matricula') ?: null
+        );
 
         $p = ProgressoAula::where('matricula_id',$matricula->id)->where('aula_id',$aula->id)->first();
 

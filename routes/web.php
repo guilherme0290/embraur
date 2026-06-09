@@ -201,6 +201,7 @@ Route::prefix('prof')->name('prof.')->group(function () {
         Route::put('cursos/{curso}/modulos/{modulo}', [ModuloAdminController::class, 'update'])->name('cursos.modulos.update');
         Route::delete('cursos/{curso}/modulos/{modulo}', [ModuloAdminController::class, 'destroy'])->name('cursos.modulos.destroy');
         Route::post('cursos/{curso}/modulos/reordenar', [ModuloAdminController::class, 'reorder'])->name('cursos.modulos.reorder');
+        Route::post('cursos/{curso}/modulos/{modulo}/copiar', [ModuloAdminController::class, 'copyToCourse'])->name('cursos.modulos.copy');
 
         // Aulas
         Route::get('cursos/{curso}/modulos/{modulo}/aulas', [AulaAdminController::class, 'index'])->name('cursos.modulos.aulas.index');
@@ -223,6 +224,8 @@ Route::prefix('prof')->name('prof.')->group(function () {
         Route::post('quizzes',            [ProfessorQuizController::class, 'store'])->name('quizzes.store');
         Route::get('quizzes/{quiz}/edit', [ProfessorQuizController::class, 'edit'])->name('quizzes.edit');
         Route::put('quizzes/{quiz}',      [ProfessorQuizController::class, 'update'])->name('quizzes.update');
+        Route::delete('quizzes/{quiz}',   [ProfessorQuizController::class, 'destroy'])->name('quizzes.destroy');
+        Route::post('quizzes/{quiz}/questoes/reordenar', [ProfessorQuizController::class, 'reorderQuestoes'])->name('quizzes.questoes.reorder');
 
         //relatorios
         Route::get('/relatorios',                [ProfRelatorioController::class, 'index'])->name('relatorios.index');

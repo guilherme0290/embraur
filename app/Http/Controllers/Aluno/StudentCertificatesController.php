@@ -120,10 +120,15 @@ class StudentCertificatesController extends Controller
     public function baixarFPDF(Cursos $curso, Request $request)
     {
         $alunoId   = auth('aluno')->id() ?? $request->session()->get('aluno_id');
-        $matricula = Matriculas::where('aluno_id', $alunoId)
-            ->where('curso_id', $curso->id)->firstOrFail();
+        $matricula = Matriculas::atualDoAlunoCurso(
+            (int) $alunoId,
+            (int) $curso->id,
+            $request->integer('matricula') ?: null
+        );
 
-        $cert = $matricula->certificado->firstOrFail();
+        $cert = $request->integer('certificado')
+            ? Certificados::where('matricula_id', $matricula->id)->findOrFail($request->integer('certificado'))
+            : $matricula->certificado->firstOrFail();
 
         $bytes = $this->renderCertificadoFPDF($curso, $matricula, $cert);
 
@@ -417,9 +422,11 @@ class StudentCertificatesController extends Controller
         $aluno   = User::where('tipo_usuario','aluno')->where('id',$alunoId)->firstOrFail();
         abort_if(!$aluno, 403);
 
-        $matricula = Matriculas::where('aluno_id', $aluno->id)
-            ->where('curso_id', $curso->id)
-            ->firstOrFail();
+        $matricula = Matriculas::atualDoAlunoCurso(
+            (int) $aluno->id,
+            (int) $curso->id,
+            $request->integer('matricula') ?: null
+        );
 
         // cria/recupera registro
         $cert = Certificados::firstOrCreate(

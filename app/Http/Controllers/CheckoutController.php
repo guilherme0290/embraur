@@ -428,25 +428,12 @@ class CheckoutController extends Controller
                             continue; // item inconsistente – ignora
                         }
 
-                        // Evita matrícula duplicada
-                        $jaTem = Matriculas::where('aluno_id', $pedido->aluno_id)
-                            ->where('curso_id', $curso->id)
-                            ->exists();
-                        if ($jaTem) {
+                        // Mantém histórico: bloqueia apenas ciclo ainda vigente.
+                        if (Matriculas::possuiCicloVigente((int) $pedido->aluno_id, (int) $curso->id)) {
                             continue;
                         }
 
-                        $agora = now();
-
-                        Matriculas::create([
-                            'aluno_id'              => $pedido->aluno_id,
-                            'curso_id'              => $curso->id,
-                            'data_matricula'        => $agora,
-                            'data_inicio'           => $agora,
-                            'data_conclusao'        => null,
-                            'progresso_porcentagem' => 0,
-                            'nota_final'            => null,
-                        ]);
+                        Matriculas::criarNovoCiclo((int) $pedido->aluno_id, $curso);
                     }
                 });
             } catch (\Throwable $e) {
@@ -575,18 +562,8 @@ class CheckoutController extends Controller
                                         $curso = $item->curso;
                                         if (!$curso) continue;
 
-                                        $jaTem = Matriculas::where('aluno_id', $pedido->aluno_id)
-                                            ->where('curso_id', $curso->id)
-                                            ->exists();
-
-                                        if (!$jaTem) {
-                                            Matriculas::create([
-                                                'aluno_id'              => $pedido->aluno_id,
-                                                'curso_id'              => $curso->id,
-                                                'data_matricula'        => now(),
-                                                'data_inicio'           => now(),
-                                                'progresso_porcentagem' => 0,
-                                            ]);
+                                        if (!Matriculas::possuiCicloVigente((int) $pedido->aluno_id, (int) $curso->id)) {
+                                            Matriculas::criarNovoCiclo((int) $pedido->aluno_id, $curso);
                                         }
                                     }
                                 } elseif ($status === 'pending') {

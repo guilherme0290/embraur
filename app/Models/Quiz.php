@@ -40,7 +40,7 @@ class Quiz extends Model
 
     public function questoes()
     {
-        return $this->hasMany(QuizQuestao::class, 'quiz_id')->orderBy('id');
+        return $this->hasMany(QuizQuestao::class, 'quiz_id')->orderBy('ordem')->orderBy('id');
     }
 
     public function tentativas()

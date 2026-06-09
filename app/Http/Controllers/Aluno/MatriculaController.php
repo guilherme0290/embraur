@@ -13,10 +13,9 @@ class MatriculaController extends Controller
     {
         $alunoId = $request->session()->get('aluno_id');
 
-        Matriculas::firstOrCreate([
-            'aluno_id' => $alunoId,
-            'curso_id' => $curso->id,
-        ]);
+        if (!Matriculas::possuiCicloVigente((int) $alunoId, (int) $curso->id)) {
+            Matriculas::criarNovoCiclo((int) $alunoId, $curso);
+        }
 
         return redirect()->route('aluno.dashboard')->with('ok','Matrícula realizada com sucesso!');
     }

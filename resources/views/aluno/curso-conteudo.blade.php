@@ -43,7 +43,14 @@
             </a>
         </div>
 
-        <h1 class="text-2xl font-bold mb-4">{{ $curso->titulo }}</h1>
+        <h1 class="text-2xl font-bold mb-1">{{ $curso->titulo }}</h1>
+        <div class="mb-4 text-sm text-slate-600">
+            Ciclo {{ (int) ($matricula->ciclo_numero ?? 1) }} ·
+            Status: {{ ucfirst($matricula->status_exibicao) }}
+            @if($matricula->data_vencimento)
+                · Vencimento: {{ $matricula->data_vencimento->format('d/m/Y') }}
+            @endif
+        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {{-- COLUNA PRINCIPAL (PLAYER + CONTEÚDO) --}}
@@ -111,7 +118,7 @@
 
                         <div class="flex items-center gap-2">
                             @if($prevAula)
-                                <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $modulo->id, $prevAula->id]) }}"
+                                <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $modulo->id, $prevAula->id, 'matricula' => $matricula->id]) }}"
                                    class="px-3 py-2 border rounded hover:bg-slate-50">&larr; Anterior</a>
                             @else
                                 <button class="px-3 py-2 border rounded opacity-50" disabled>&larr; Anterior</button>
@@ -119,19 +126,19 @@
 
                             @if($nextAula)
                                 {{-- Próxima aula dentro do mesmo módulo --}}
-                                <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $modulo->id, $nextAula->id]) }}"
+                                <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $modulo->id, $nextAula->id, 'matricula' => $matricula->id]) }}"
                                    class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                                     Próxima &rarr;
                                 </a>
                             @elseif($modulo->quiz)
                                 {{-- Se não tem próxima aula, mas tem prova do módulo --}}
-                                <a href="{{ route('aluno.quiz.show', [$curso->id, $modulo->quiz->id]) }}"
+                                <a href="{{ route('aluno.quiz.show', [$curso->id, $modulo->quiz->id, 'matricula' => $matricula->id]) }}"
                                    class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                                     Ir para a Prova do Módulo &rarr;
                                 </a>
                             @elseif(!empty($nextAulaCross))
                                 {{-- Próxima aula no próximo módulo --}}
-                                <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $nextAulaCross->modulo_id, $nextAulaCross->id]) }}"
+                                <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $nextAulaCross->modulo_id, $nextAulaCross->id, 'matricula' => $matricula->id]) }}"
                                    class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                                     Próxima &rarr;
                                 </a>
@@ -207,7 +214,7 @@
 
                             <div class="mt-2">
                                 @foreach($m->aulas->sortBy('ordem') as $a)
-                                    <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $m->id, $a->id]) }}"
+                                    <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $m->id, $a->id, 'matricula' => $matricula->id]) }}"
                                         class="flex items-center justify-between rounded border p-2 mb-1 {{ !$modLiberado ? 'opacity-60 pointer-events-none' : '' }} {{ (int)$a->id === (int)$aula->id ? 'bg-green-50 border-green-200' : 'hover:bg-slate-50' }}">
                                         <span class="truncate text-sm">{{ $a->titulo }}</span>
                                     </a>
@@ -216,7 +223,7 @@
                                 {{-- Prova do módulo --}}
                                 <div class="flex items-center justify-between mt-2">
                                     @if($quiz)
-                                        <a href="{{ route('aluno.quiz.show', [$curso->id, $quiz->id]) }}"
+                                        <a href="{{ route('aluno.quiz.show', [$curso->id, $quiz->id, 'matricula' => $matricula->id]) }}"
                                            class="px-2 py-1 text-sm border rounded hover:bg-slate-50 {{ !$modLiberado ? 'opacity-60 pointer-events-none' : '' }}">
                                             Prova do Módulo
                                         </a>
@@ -249,7 +256,7 @@
                 @php
 
                     // Regra simples: habilita ao concluir (CourseCompletionService seta status=concluido)
-                    $podeEmitirCert = ($matricula->status ?? null) === 'concluido';
+                    $podeEmitirCert = ($matricula->status_exibicao ?? null) === 'concluido';
                 @endphp
 
                 <div class="mt-4 rounded-lg border p-4">
@@ -270,7 +277,7 @@
                         @if($certificado)
 
                             <form method="POST"
-                                  action="{{ route('aluno.curso.certificado.baixar', [$curso->id, 'certificado' => $certificado->id]) }}">
+                                  action="{{ route('aluno.curso.certificado.baixar', [$curso->id, 'certificado' => $certificado->id, 'matricula' => $matricula->id]) }}">
                                 @csrf
                                 <button type="submit"
                                         class="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap">
@@ -278,7 +285,7 @@
                                 </button>
                             </form>
                         @else
-                            <form method="POST" action="{{ route('aluno.curso.certificado.emitir', $curso->id) }}">
+                            <form method="POST" action="{{ route('aluno.curso.certificado.emitir', [$curso->id, 'matricula' => $matricula->id]) }}">
                                 @csrf
                                 <button
                                     class="px-3 py-2 rounded whitespace-nowrap {{ $podeEmitirCert ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-slate-200 text-slate-500 cursor-not-allowed' }}"
@@ -319,7 +326,7 @@
         // POST utilitário
         async function postProgress(aulaId, segundos, duracao, marcar = false) {
             const csrf = getCsrf();
-            const url = `{{ url('/aluno/aulas') }}/${aulaId}/progresso`;
+            const url = `{{ url('/aluno/aulas') }}/${aulaId}/progresso?matricula={{ $matricula->id }}`;
 
             return fetch(url, {
                 method: 'POST',

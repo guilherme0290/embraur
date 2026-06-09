@@ -161,22 +161,8 @@ class AlunoAuthController extends Controller
 
             // Se o curso for grátis, você pode matricular direto e pular checkout
             if ((float)($curso->preco ?? 0) <= 0) {
-                $jaTem = Matriculas::where('aluno_id', $aluno->id)
-                    ->where('curso_id', $curso->id)
-                    ->exists();
-
-                if (!$jaTem) {
-                    $agora = Carbon::now();
-                    Matriculas::create([
-                        'aluno_id'              => $aluno->id,
-                        'curso_id'              => $curso->id,
-                        'data_matricula'        => $agora,
-                        'data_inicio'           => $agora,
-                        'data_conclusao'        => null,
-                        'data_vencimento'       => $curso->validade_dias ? $agora->copy()->addDays((int)$curso->validade_dias) : null,
-                        'progresso_porcentagem' => 0,
-                        'nota_final'            => null,
-                    ]);
+                if (!Matriculas::possuiCicloVigente((int) $aluno->id, (int) $curso->id)) {
+                    Matriculas::criarNovoCiclo((int) $aluno->id, $curso);
                 }
 
                 return redirect()->route('aluno.dashboard')

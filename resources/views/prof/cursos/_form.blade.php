@@ -247,10 +247,11 @@
                     $aulasModulo = data_get($modulo, 'aulas', []);
                     $quizModulo = data_get($modulo, 'quiz') ?: $quizzesPorModulo->get($moduloId);
                 @endphp
-                <div class="rounded-lg border p-0 overflow-hidden" data-modulo="{{ $mIdx }}">
+                <div class="rounded-lg border p-0 overflow-hidden" data-modulo="{{ $mIdx }}" data-id="{{ $moduloId }}" data-reorder-url="{{ isset($curso->id) ? route('prof.cursos.modulos.reorder', $curso->id) : '' }}">
                     {{-- Cabeçalho do módulo (colapsável) --}}
                     <div class="flex items-center justify-between px-4 py-3 bg-slate-50 border-b">
                         <div class="flex items-center gap-3">
+                            <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
                             <button type="button" class="toggle-modulo h-8 w-8 rounded-md border bg-white hover:bg-slate-100 grid place-items-center"
                                     aria-expanded="true">
                                 <span class="i">▾</span>
@@ -266,6 +267,12 @@
                                         @if(isset($curso->id) && $quizModulo)
                                             <a href="{{ route('prof.quizzes.edit', $quizModulo->id ?? 0) }}"
                                                class="text-xs underline text-green-700 ml-2">Editar</a>
+                                            <button type="button"
+                                                    class="text-xs underline text-red-700 ml-2"
+                                                    data-action="delete-quiz"
+                                                    data-url="{{ route('prof.quizzes.destroy', $quizModulo->id) }}">
+                                                Excluir
+                                            </button>
                                         @endif
                                     @else
                                         <span class="pill bg-slate-100 text-slate-700 border border-slate-200">
@@ -279,8 +286,12 @@
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="text-red-600 hover:underline"
-                                onclick="window.removeModulo(this)">Remover</button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="text-xs underline" data-action="move-modulo-up">Subir</button>
+                            <button type="button" class="text-xs underline" data-action="move-modulo-down">Descer</button>
+                            <button type="button" class="text-red-600 hover:underline"
+                                    onclick="window.removeModulo(this)">Remover</button>
+                        </div>
                     </div>
 
                     <div class="modulo-body p-4">
@@ -306,10 +317,14 @@
                         </div>
 
                         {{-- Aulas --}}
-                        <div class="space-y-6" data-aulas="{{ $mIdx }}">
+                        <div class="space-y-6" data-aulas="{{ $mIdx }}" data-reorder-url="{{ ($moduloId && isset($curso->id)) ? route('prof.cursos.modulos.aulas.reorder', [$curso->id, $moduloId]) : '' }}">
                             @foreach($aulasModulo as $aIdx => $aula)
-                                <div class="aula-card grid grid-cols-1 md:grid-cols-4 gap-3 border rounded-md p-3 bg-white" data-aula="{{ $aIdx }}">
+                                <div class="aula-card grid grid-cols-1 md:grid-cols-4 gap-3 border rounded-md p-3 bg-white" data-aula="{{ $aIdx }}" data-id="{{ data_get($aula, 'id') }}">
                                     <input type="hidden" name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][id]" value="{{ data_get($aula, 'id') }}">
+
+                                    <div class="md:col-span-4 flex justify-end">
+                                        <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar aula</button>
+                                    </div>
 
                                     <div class="md:col-span-2">
                                         <label class="block h-5 leading-5 text-sm font-medium whitespace-nowrap">Título da Aula</label>
@@ -384,8 +399,9 @@
                                     @endif
 
                                     <div class="md:col-span-4 text-right">
-                                        <button type="button" class="text-red-600 hover:underline"
-                                                onclick="this.closest('[data-aula]').remove()">Remover aula</button>
+                                        <button type="button" class="text-xs underline mr-2" data-action="move-aula-up">Subir</button>
+                                        <button type="button" class="text-xs underline mr-2" data-action="move-aula-down">Descer</button>
+                                        <button type="button" class="text-red-600 hover:underline" data-action="remove-aula">Remover aula</button>
                                     </div>
                                 </div>
                             @endforeach
@@ -396,7 +412,7 @@
                             <div class="flex items-center gap-2">
                                 <button type="button" class="btn btn-outline" data-action="add-aula">＋ Adicionar Aula</button>
 
-                                @if(isset($curso->id) && $moduloId)
+                                @if(isset($curso->id) && $moduloId && !$quizModulo)
                                     <a
                                         href="{{ route('prof.quizzes.create', ['curso' => $curso->id, 'modulo' => $moduloId]) }}"
                                         class="btn btn-soft"
@@ -409,6 +425,22 @@
 
                             <span class="text-xs text-slate-500">Organize as aulas e cadastre a prova do módulo quando estiver pronto</span>
                         </div>
+                        @if(isset($curso->id) && $moduloId && isset($cursosDoProfessor))
+                            <div class="mt-3 flex items-center justify-end gap-2">
+                                <select class="h-9 rounded-md border px-2 text-sm" data-copy-module-destino>
+                                    <option value="">Copiar módulo para...</option>
+                                    @foreach($cursosDoProfessor as $cursoDestino)
+                                        <option value="{{ $cursoDestino->id }}">{{ $cursoDestino->titulo }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="button"
+                                        class="text-sm px-3 py-1 rounded border hover:bg-slate-50"
+                                        data-action="copy-module"
+                                        data-url="{{ route('prof.cursos.modulos.copy', [$curso->id, $moduloId]) }}">
+                                    Copiar módulo
+                                </button>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endforeach
@@ -702,6 +734,8 @@
         }
 
         form?.addEventListener('submit', (e) => {
+            renumberStructureNames();
+
             if (!validateRequiredFields()) {
                 e.preventDefault();
                 return;
@@ -714,10 +748,213 @@
 
         if (!modWrap) return;
 
+        function submitDynamicForm(url, fields = {}, method = 'POST'){
+            const f = document.createElement('form');
+            f.method = 'POST';
+            f.action = url;
+            f.style.display = 'none';
+
+            const token = document.createElement('input');
+            token.type = 'hidden';
+            token.name = '_token';
+            token.value = '{{ csrf_token() }}';
+            f.appendChild(token);
+
+            if (method !== 'POST') {
+                const spoof = document.createElement('input');
+                spoof.type = 'hidden';
+                spoof.name = '_method';
+                spoof.value = method;
+                f.appendChild(spoof);
+            }
+
+            Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                f.appendChild(input);
+            });
+
+            document.body.appendChild(f);
+            f.submit();
+        }
+
+        async function postJson(url, payload){
+            const res = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                throw new Error(`Falha ao salvar ordenação (${res.status})`);
+            }
+
+            return res.json();
+        }
+
         function renumberModules(){
             modWrap.querySelectorAll('[data-modulo]').forEach((el, i)=>{
                 const num = el.querySelector('.mod-num');
                 if (num) num.textContent = (i+1);
+            });
+        }
+
+        function renumberStructureNames(){
+            if (!modWrap) return;
+
+            modWrap.querySelectorAll('[data-modulo]').forEach((moduleCard, mIdx) => {
+                moduleCard.dataset.modulo = mIdx;
+                const num = moduleCard.querySelector('.mod-num');
+                if (num) num.textContent = mIdx + 1;
+
+                moduleCard.querySelectorAll('[name^="modulos["]').forEach((field) => {
+                    field.name = field.name.replace(/^modulos\[\d+\]/, `modulos[${mIdx}]`);
+                });
+
+                moduleCard.querySelectorAll('[data-aula]').forEach((aulaCard, aIdx) => {
+                    aulaCard.dataset.aula = aIdx;
+                    aulaCard.querySelectorAll('[name^="modulos["]').forEach((field) => {
+                        field.name = field.name.replace(
+                            /^modulos\[(\d+)\]\[aulas\]\[\d+\]/,
+                            `modulos[${mIdx}][aulas][${aIdx}]`
+                        );
+                    });
+                });
+            });
+        }
+
+        function moveElement(el, direction){
+            if (!el) return;
+            const target = direction < 0 ? el.previousElementSibling : el.nextElementSibling;
+            if (!target) return;
+            if (direction < 0) {
+                target.insertAdjacentElement('beforebegin', el);
+            } else {
+                target.insertAdjacentElement('afterend', el);
+            }
+            renumberStructureNames();
+        }
+
+        function directItems(container, selector){
+            return Array.from(container.children).filter((el) => el.matches(selector));
+        }
+
+        function reorderDomByIds(container, selector, ids){
+            const byId = new Map(directItems(container, selector).map((el) => [String(el.dataset.id), el]));
+            ids.forEach((id) => {
+                const el = byId.get(String(id));
+                if (el) container.appendChild(el);
+            });
+            renumberStructureNames();
+        }
+
+        function savedReorderPayload(container, selector){
+            const items = directItems(container, selector);
+            if (items.length === 0 || items.some((el) => !el.dataset.id)) return null;
+            return items.map((el, idx) => ({ id: Number(el.dataset.id), ordem: idx + 1 }));
+        }
+
+        async function persistContainerOrder(container, selector, url){
+            const ordens = savedReorderPayload(container, selector);
+            if (!url || !ordens) return false;
+
+            await postJson(url, { ordens });
+            reorderDomByIds(container, selector, ordens.map((item) => item.id));
+            return true;
+        }
+
+        async function applySavedOrder(container, selector, url, orderedElements){
+            if (!url || orderedElements.some((el) => !el.dataset.id)) return false;
+
+            const ordens = orderedElements.map((el, idx) => ({ id: Number(el.dataset.id), ordem: idx + 1 }));
+            await postJson(url, { ordens });
+            reorderDomByIds(container, selector, ordens.map((item) => item.id));
+            return true;
+        }
+
+        async function moveElementPersisted(el, direction, selector, container, url){
+            if (!el || !container) return;
+            const items = directItems(container, selector);
+            const from = items.indexOf(el);
+            const to = from + direction;
+            if (from < 0 || to < 0 || to >= items.length) return;
+
+            const ordered = [...items];
+            ordered.splice(from, 1);
+            ordered.splice(to, 0, el);
+
+            try {
+                const persisted = await applySavedOrder(container, selector, url, ordered);
+                if (!persisted) {
+                    moveElement(el, direction);
+                }
+            } catch (err) {
+                alert(err.message || 'Não foi possível salvar a ordenação.');
+            }
+        }
+
+        function bindDragDrop(container, selector, urlResolver){
+            let dragged = null;
+
+            container.addEventListener('dragstart', (e) => {
+                const handle = e.target.closest('[data-drag-handle]');
+                if (!handle) return;
+                const item = handle.closest(selector);
+                if (!item || !container.contains(item)) return;
+                dragged = item;
+                item.classList.add('opacity-60');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', item.dataset.id || '');
+            });
+
+            container.addEventListener('dragend', () => {
+                dragged?.classList.remove('opacity-60');
+                dragged = null;
+            });
+
+            container.addEventListener('dragover', (e) => {
+                if (!dragged) return;
+                const target = e.target.closest(selector);
+                if (!target || target === dragged || target.parentElement !== container) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            container.addEventListener('drop', async (e) => {
+                if (!dragged) return;
+                const target = e.target.closest(selector);
+                if (!target || target === dragged || target.parentElement !== container) return;
+                e.preventDefault();
+
+                const items = directItems(container, selector);
+                const without = items.filter((item) => item !== dragged);
+                const targetIndex = without.indexOf(target);
+                const after = e.clientY > target.getBoundingClientRect().top + (target.offsetHeight / 2);
+                const insertAt = targetIndex + (after ? 1 : 0);
+                const ordered = [...without];
+                ordered.splice(insertAt, 0, dragged);
+
+                try {
+                    const persisted = await applySavedOrder(container, selector, urlResolver(dragged, target), ordered);
+                    if (!persisted) {
+                        if (after) {
+                            target.insertAdjacentElement('afterend', dragged);
+                        } else {
+                            target.insertAdjacentElement('beforebegin', dragged);
+                        }
+                        renumberStructureNames();
+                    }
+                } catch (err) {
+                    alert(err.message || 'Não foi possível salvar a ordenação.');
+                }
             });
         }
 
@@ -726,7 +963,7 @@
             const card = btn.closest('[data-modulo]');
             if (!card) return;
             card.remove();
-            renumberModules();
+            renumberStructureNames();
         };
 
         // Colapsar/expandir
@@ -761,13 +998,18 @@
 <div class="rounded-lg border p-0 overflow-hidden" data-modulo="${idx}">
   <div class="flex items-center justify-between px-4 py-3 bg-slate-50 border-b">
     <div class="flex items-center gap-3">
+      <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
       <button type="button" class="toggle-modulo h-8 w-8 rounded-md border bg-white hover:bg-slate-100 grid place-items-center" aria-expanded="true"><span class="i">▾</span></button>
       <div>
         <h3 class="font-semibold">Módulo <span class="mod-num">${idx+1}</span></h3>
         <div class="mt-1"><span class="pill bg-slate-100 text-slate-700 border border-slate-200">⏳ Sem prova</span></div>
       </div>
     </div>
-    <button type="button" class="text-red-600 hover:underline" onclick="window.removeModulo(this)">Remover</button>
+    <div class="flex items-center gap-2">
+      <button type="button" class="text-xs underline" data-action="move-modulo-up">Subir</button>
+      <button type="button" class="text-xs underline" data-action="move-modulo-down">Descer</button>
+      <button type="button" class="text-red-600 hover:underline" onclick="window.removeModulo(this)">Remover</button>
+    </div>
   </div>
   <div class="modulo-body p-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -795,6 +1037,9 @@
         function aulaTemplate(mIdx, aIdx){
             return `
 <div class="aula-card grid grid-cols-1 md:grid-cols-4 gap-3 border rounded-md p-3 bg-white" data-aula="${aIdx}">
+  <div class="md:col-span-4 flex justify-end">
+    <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar aula</button>
+  </div>
   <div class="md:col-span-2">
     <label class="block h-5 leading-5 text-sm font-medium whitespace-nowrap">Título da Aula</label>
     <input name="modulos[${mIdx}][aulas][${aIdx}][titulo]" required data-required-field="1" data-label="Título da aula" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: Criando componentes">
@@ -829,6 +1074,8 @@
   </div>
   ` : ``}
   <div class="md:col-span-4 text-right">
+    <button type="button" class="text-xs underline mr-2" data-action="move-aula-up">Subir</button>
+    <button type="button" class="text-xs underline mr-2" data-action="move-aula-down">Descer</button>
     <button type="button" class="text-red-600 hover:underline" data-action="remove-aula">Remover aula</button>
   </div>
 </div>`;
@@ -855,12 +1102,78 @@
                 window.initCKEditorsIn(cont); // inicializa CK nos novos textareas
                 return;
             }
+            const delQuiz = e.target.closest('[data-action="delete-quiz"]');
+            if (delQuiz) {
+                e.preventDefault();
+                if (confirm('Excluir a prova deste módulo? As tentativas e respostas vinculadas também serão removidas.')) {
+                    submitDynamicForm(delQuiz.dataset.url, {}, 'DELETE');
+                }
+                return;
+            }
+            const copyModule = e.target.closest('[data-action="copy-module"]');
+            if (copyModule) {
+                e.preventDefault();
+                const wrap = copyModule.closest('.modulo-body');
+                const destino = wrap?.querySelector('[data-copy-module-destino]')?.value;
+                if (!destino) {
+                    alert('Selecione o curso de destino.');
+                    return;
+                }
+                submitDynamicForm(copyModule.dataset.url, { curso_destino_id: destino });
+                return;
+            }
             const rm = e.target.closest('[data-action="remove-aula"]');
             if (rm) {
                 e.preventDefault();
                 rm.closest('[data-aula]')?.remove();
+                renumberStructureNames();
+                return;
+            }
+            const moveModuleUp = e.target.closest('[data-action="move-modulo-up"]');
+            if (moveModuleUp) {
+                e.preventDefault();
+                const item = moveModuleUp.closest('[data-modulo]');
+                moveElementPersisted(item, -1, '[data-modulo]', modWrap, item?.dataset.reorderUrl || '');
+                return;
+            }
+            const moveModuleDown = e.target.closest('[data-action="move-modulo-down"]');
+            if (moveModuleDown) {
+                e.preventDefault();
+                const item = moveModuleDown.closest('[data-modulo]');
+                moveElementPersisted(item, 1, '[data-modulo]', modWrap, item?.dataset.reorderUrl || '');
+                return;
+            }
+            const moveAulaUp = e.target.closest('[data-action="move-aula-up"]');
+            if (moveAulaUp) {
+                e.preventDefault();
+                const item = moveAulaUp.closest('[data-aula]');
+                const container = item?.parentElement;
+                moveElementPersisted(item, -1, '[data-aula]', container, container?.dataset.reorderUrl || '');
+                return;
+            }
+            const moveAulaDown = e.target.closest('[data-action="move-aula-down"]');
+            if (moveAulaDown) {
+                e.preventDefault();
+                const item = moveAulaDown.closest('[data-aula]');
+                const container = item?.parentElement;
+                moveElementPersisted(item, 1, '[data-aula]', container, container?.dataset.reorderUrl || '');
             }
         });
+
+        function bindCourseDragDrop(root = document){
+            if (modWrap && modWrap.dataset.dragBound !== '1') {
+                modWrap.dataset.dragBound = '1';
+                bindDragDrop(modWrap, '[data-modulo]', (dragged) => dragged?.dataset.reorderUrl || '');
+            }
+
+            root.querySelectorAll('[data-aulas]').forEach((container) => {
+                if (container.dataset.dragBound === '1') return;
+                container.dataset.dragBound = '1';
+                bindDragDrop(container, '[data-aula]', () => container.dataset.reorderUrl || '');
+            });
+        }
+
+        bindCourseDragDrop(document);
 
         // Adicionar módulo
         function addModulo(){
@@ -870,6 +1183,7 @@
             bindModule(card);
             renumberModules();
             window.initCKEditorsIn(card); // inicializa CK no novo módulo
+            bindCourseDragDrop(card);
         }
         addModuloBtn?.addEventListener('click', addModulo);
 

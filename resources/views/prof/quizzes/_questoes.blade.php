@@ -5,11 +5,21 @@
 
     <div id="questoesWrap" class="space-y-4">
         @forelse($questoes as $qIdx => $questao)
-            <div class="questao-card border rounded-md p-4 bg-slate-50" data-q="{{ $qIdx }}">
+            <div class="questao-card border rounded-md p-4 bg-slate-50" data-q="{{ $qIdx }}" data-id="{{ $questao['id'] ?? '' }}">
+                @if(!empty($questao['id']))
+                    <input type="hidden" name="questoes[{{ $qIdx }}][id]" value="{{ $questao['id'] }}">
+                @endif
                 <div class="flex justify-between items-center mb-3">
-                    <h4 class="font-semibold">Questão <span class="q-num">{{ $qIdx+1 }}</span></h4>
-                    <button type="button" class="text-red-600 text-xs"
-                            onclick="this.closest('.questao-card').remove(); window.__quizzes_renumberQuestoes()">Remover</button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
+                        <h4 class="font-semibold">Questão <span class="q-num">{{ $qIdx+1 }}</span></h4>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="text-xs underline" data-action="mover-questao-cima">Subir</button>
+                        <button type="button" class="text-xs underline" data-action="mover-questao-baixo">Descer</button>
+                        <button type="button" class="text-xs underline" data-action="inserir-questao-abaixo">Inserir abaixo</button>
+                        <button type="button" class="text-red-600 text-xs" data-action="remover-questao">Remover</button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -43,6 +53,9 @@
                 <div class="mt-3 space-y-2 opcoesWrap">
                     @foreach($opcoes as $oIdx => $op)
                         <div class="flex items-center gap-2 border rounded px-3 py-2 bg-white" data-op>
+                            @if(!empty($op['id']))
+                                <input type="hidden" name="questoes[{{ $qIdx }}][opcoes][{{ $oIdx }}][id]" value="{{ $op['id'] }}">
+                            @endif
                             <input type="text" name="questoes[{{ $qIdx }}][opcoes][{{ $oIdx }}][texto]"
                                    value="{{ $op['texto'] ?? '' }}" placeholder="Opção..."
                                    class="flex-1 h-9 rounded-md border px-2">
@@ -112,6 +125,7 @@
 
         const wrap   = document.getElementById('questoesWrap');
         const addBtn = document.getElementById('btnAddQuestao');
+        const REORDER_URL = @json((isset($quiz) && !empty($quiz->id)) ? route('prof.quizzes.questoes.reorder', $quiz->id) : null);
 
         // --- CKEditor registry ---
         const editors = new Map(); // textareaEl -> editorInstance
@@ -194,8 +208,16 @@
             return `
       <div class="questao-card border rounded-md p-4 bg-slate-50" data-q="${idx}">
         <div class="flex justify-between items-center mb-3">
-          <h4 class="font-semibold">Questão <span class="q-num">${idx+1}</span></h4>
-          <button type="button" class="text-red-600 text-xs" data-action="remover-questao">Remover</button>
+          <div class="flex items-center gap-2">
+            <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
+            <h4 class="font-semibold">Questão <span class="q-num">${idx+1}</span></h4>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="button" class="text-xs underline" data-action="mover-questao-cima">Subir</button>
+            <button type="button" class="text-xs underline" data-action="mover-questao-baixo">Descer</button>
+            <button type="button" class="text-xs underline" data-action="inserir-questao-abaixo">Inserir abaixo</button>
+            <button type="button" class="text-red-600 text-xs" data-action="remover-questao">Remover</button>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -253,6 +275,146 @@
         }
         window.__quizzes_addQuestao = addQuestao; // se quiser chamar fora
 
+        async function postJson(url, payload){
+            const res = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                throw new Error(`Falha ao salvar ordenação (${res.status})`);
+            }
+
+            return res.json();
+        }
+
+        function questionCards(){
+            return Array.from(wrap?.children || []).filter((el) => el.classList.contains('questao-card'));
+        }
+
+        function reorderDomByIds(ids){
+            const byId = new Map(questionCards().map((el) => [String(el.dataset.id), el]));
+            ids.forEach((id) => {
+                const el = byId.get(String(id));
+                if (el) wrap.appendChild(el);
+            });
+            renumberQuestoes();
+        }
+
+        async function applySavedQuestionOrder(orderedCards){
+            if (!REORDER_URL || orderedCards.some((card) => !card.dataset.id)) return false;
+
+            const ordens = orderedCards.map((card, idx) => ({
+                id: Number(card.dataset.id),
+                ordem: idx + 1,
+            }));
+
+            await postJson(REORDER_URL, { ordens });
+            reorderDomByIds(ordens.map((item) => item.id));
+            return true;
+        }
+
+        function insertQuestaoAfter(card){
+            if (!wrap || !card) return;
+            const idx = wrap.querySelectorAll('.questao-card').length;
+            card.insertAdjacentHTML('afterend', questaoTemplate(idx));
+            const inserted = card.nextElementSibling;
+            initCkOn(inserted.querySelector('textarea[data-role="enunciado"]'));
+            renumberQuestoes();
+        }
+
+        async function moveQuestao(card, direction){
+            if (!card) return;
+            const cards = questionCards();
+            const from = cards.indexOf(card);
+            const to = from + direction;
+            if (from < 0 || to < 0 || to >= cards.length) return;
+
+            const ordered = [...cards];
+            ordered.splice(from, 1);
+            ordered.splice(to, 0, card);
+
+            try {
+                const persisted = await applySavedQuestionOrder(ordered);
+                if (!persisted) {
+                    const target = cards[to];
+                    if (direction < 0) {
+                        target.insertAdjacentElement('beforebegin', card);
+                    } else {
+                        target.insertAdjacentElement('afterend', card);
+                    }
+                    renumberQuestoes();
+                }
+            } catch (err) {
+                alert(err.message || 'Não foi possível salvar a ordenação.');
+            }
+        }
+
+        function bindQuestionDragDrop(){
+            if (!wrap || wrap.dataset.dragBound === '1') return;
+            wrap.dataset.dragBound = '1';
+            let dragged = null;
+
+            wrap.addEventListener('dragstart', (e) => {
+                const handle = e.target.closest('[data-drag-handle]');
+                if (!handle) return;
+                const card = handle.closest('.questao-card');
+                if (!card) return;
+                dragged = card;
+                card.classList.add('opacity-60');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', card.dataset.id || '');
+            });
+
+            wrap.addEventListener('dragend', () => {
+                dragged?.classList.remove('opacity-60');
+                dragged = null;
+            });
+
+            wrap.addEventListener('dragover', (e) => {
+                if (!dragged) return;
+                const target = e.target.closest('.questao-card');
+                if (!target || target === dragged || target.parentElement !== wrap) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            wrap.addEventListener('drop', async (e) => {
+                if (!dragged) return;
+                const target = e.target.closest('.questao-card');
+                if (!target || target === dragged || target.parentElement !== wrap) return;
+                e.preventDefault();
+
+                const cards = questionCards();
+                const without = cards.filter((card) => card !== dragged);
+                const targetIndex = without.indexOf(target);
+                const after = e.clientY > target.getBoundingClientRect().top + (target.offsetHeight / 2);
+                const ordered = [...without];
+                ordered.splice(targetIndex + (after ? 1 : 0), 0, dragged);
+
+                try {
+                    const persisted = await applySavedQuestionOrder(ordered);
+                    if (!persisted) {
+                        if (after) {
+                            target.insertAdjacentElement('afterend', dragged);
+                        } else {
+                            target.insertAdjacentElement('beforebegin', dragged);
+                        }
+                        renumberQuestoes();
+                    }
+                } catch (err) {
+                    alert(err.message || 'Não foi possível salvar a ordenação.');
+                }
+            });
+        }
+
         // --- Delegação de eventos (click/change) ---
         function bind(){
             // Botão "Adicionar Questão"
@@ -265,6 +427,18 @@
                 if (t.matches('[data-action="remover-questao"]')){
                     const card = t.closest('.questao-card');
                     if (card) removeQuestao(card);
+                }
+
+                if (t.matches('[data-action="mover-questao-cima"]')){
+                    moveQuestao(t.closest('.questao-card'), -1);
+                }
+
+                if (t.matches('[data-action="mover-questao-baixo"]')){
+                    moveQuestao(t.closest('.questao-card'), 1);
+                }
+
+                if (t.matches('[data-action="inserir-questao-abaixo"]')){
+                    insertQuestaoAfter(t.closest('.questao-card'));
                 }
 
                 if (t.matches('[data-action="adicionar-opcao"]')){
@@ -288,6 +462,7 @@
 
             // Inicializa CKEditor nos textareas já existentes
             document.querySelectorAll('textarea[data-role="enunciado"]').forEach(initCkOn);
+            bindQuestionDragDrop();
 
             // Sincroniza dados dos editores no submit do primeiro <form> ancestral
             const form = wrap?.closest('form') || document.querySelector('form');

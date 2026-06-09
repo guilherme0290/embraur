@@ -1,0 +1,6 @@
+# não subir caches/logs
+storage/framework/
+storage/logs/
+*.log
+.DS_Store
+Thumbs.db

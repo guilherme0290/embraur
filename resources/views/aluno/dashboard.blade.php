@@ -26,6 +26,12 @@
                                 </div>
                                 <div class="flex-1">
                                     <div class="text-sm font-medium">{{ $item['titulo'] }}</div>
+                                    <div class="text-xs text-slate-500">
+                                        Ciclo {{ $item['ciclo'] }} • {{ ucfirst($item['status']) }}
+                                        @if(!empty($item['vencimento']))
+                                            • vence em {{ $item['vencimento'] }}
+                                        @endif
+                                    </div>
 
                                 </div>
                                 <a href="{{ $item['link'] }}" class="btn-primary text-xs px-3 py-1 rounded-md">Continuar</a>

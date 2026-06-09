@@ -200,8 +200,11 @@ class CursoAdminController extends Controller
         ]);
 
         $quizzesDoCurso = Quiz::where('curso_id', $curso->id)->get(['id','titulo']);
+        $cursosDoProfessor = Cursos::where('professor_id', session('prof_id'))
+            ->orderBy('titulo')
+            ->get(['id', 'titulo']);
 
-        return view('prof.cursos.edit', compact('curso','categorias','quizzesDoCurso'));
+        return view('prof.cursos.edit', compact('curso','categorias','quizzesDoCurso','cursosDoProfessor'));
 
 
     }

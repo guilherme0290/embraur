@@ -100,11 +100,12 @@ class QuizController extends Controller
                 'correcao_manual' => false,
             ]);
 
-            foreach ($data['questoes'] as $q) {
+            foreach ($data['questoes'] as $qIdx => $q) {
                 $questao = $quiz->questoes()->create([
                     'enunciado' => $q['enunciado'],
                     'tipo'      => $q['tipo'],
                     'pontuacao' => $q['pontuacao'] ?? 1,
+                    'ordem'     => $qIdx + 1,
                 ]);
 
                 if (($q['tipo'] ?? 'multipla') === 'multipla') {
@@ -174,6 +175,7 @@ class QuizController extends Controller
                     'enunciado' => $q['enunciado'],
                     'tipo'      => $q['tipo'],
                     'pontuacao' => $q['pontuacao'] ?? 1,
+                    'ordem'     => $qIdx + 1,
                 ])->save();
 
                 // Sincroniza opções (somente se multipla)
@@ -210,13 +212,44 @@ class QuizController extends Controller
         return redirect()->route('prof.quizzes.edit', $quiz)->with('success', 'Quiz atualizado!');
     }
 
+    public function reorderQuestoes(Request $request, Quiz $quiz)
+    {
+        $quiz->loadMissing('curso');
+        abort_if(!$quiz->curso || (int) $quiz->curso->professor_id !== (int) session('prof_id'), 403);
+
+        $data = $request->validate([
+            'ordens' => ['required', 'array', 'min:1'],
+            'ordens.*.id' => ['required', 'integer', 'exists:quiz_questoes,id'],
+            'ordens.*.ordem' => ['required', 'integer', 'min:1'],
+        ]);
+
+        DB::transaction(function () use ($quiz, $data) {
+            foreach ($data['ordens'] as $item) {
+                QuizQuestao::where('quiz_id', $quiz->id)
+                    ->where('id', $item['id'])
+                    ->update(['ordem' => $item['ordem']]);
+            }
+        });
+
+        $questoes = $quiz->questoes()->get(['id', 'ordem']);
+
+        return response()->json([
+            'ok' => true,
+            'questoes' => $questoes,
+        ]);
+    }
+
     /* =========================
      * DESTROY (opcional)
      * ========================= */
     public function destroy(Quiz $quiz)
     {
+        $quiz->loadMissing('curso');
+        abort_if(!$quiz->curso || (int) $quiz->curso->professor_id !== (int) session('prof_id'), 403);
+
+        $cursoId = $quiz->curso_id;
         $quiz->delete();
-        return back()->with('success', 'Quiz removido.');
+        return redirect()->route('prof.cursos.edit', $cursoId)->with('success', 'Prova removida.');
     }
 
     /* =========================
