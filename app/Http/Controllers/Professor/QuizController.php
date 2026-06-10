@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{Cursos, Modulos, Quiz, QuizQuestao, QuizOpcao};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class QuizController extends Controller
@@ -68,7 +69,7 @@ class QuizController extends Controller
     public function store(Request $r)
     {
         // Agora o escopo é SEMPRE módulo neste fluxo
-        $data = $r->validate([
+        $data = $this->validateQuizData($r, [
             'titulo'                  => ['nullable','string','max:255'],
             'escopo'                  => ['required', Rule::in(['modulo'])],
             'curso_id'                => ['required','exists:cursos,id'],
@@ -82,7 +83,7 @@ class QuizController extends Controller
             'questoes.*.opcoes'             => ['nullable','array'],
             'questoes.*.opcoes.*.texto'     => ['required_with:questoes.*.opcoes','string','max:255'],
             'questoes.*.opcoes.*.correta'   => ['nullable','boolean'],
-        ], $this->validationMessages(), $this->validationAttributes());
+        ]);
 
         // Coerência módulo⇄curso
         $mod = Modulos::findOrFail($data['modulo_id']);
@@ -259,7 +260,7 @@ class QuizController extends Controller
     /** Validação comum para store/update */
     private function validatePayload(Request $r, bool $updating = false): array
     {
-        return $r->validate([
+        return $this->validateQuizData($r, [
             'titulo'     => ['nullable','string','max:255'],
             'escopo'     => ['required', Rule::in(['curso','modulo'])],
             'curso_id'   => ['nullable','exists:cursos,id'],
@@ -277,7 +278,37 @@ class QuizController extends Controller
             'questoes.*.opcoes.*.id'            => $updating ? ['nullable','integer','exists:quiz_opcoes,id'] : ['nullable'],
             'questoes.*.opcoes.*.texto'         => ['required_with:questoes.*.opcoes','string','max:255'],
             'questoes.*.opcoes.*.correta'       => ['nullable','boolean'],
-        ], $this->validationMessages(), $this->validationAttributes());
+        ]);
+    }
+
+    private function validateQuizData(Request $request, array $rules): array
+    {
+        $validator = Validator::make(
+            $request->all(),
+            $rules,
+            $this->validationMessages(),
+            $this->validationAttributes()
+        );
+
+        $validator->after(function ($validator) use ($request) {
+            foreach ((array) $request->input('questoes', []) as $index => $questao) {
+                if (($questao['tipo'] ?? 'multipla') !== 'multipla') {
+                    continue;
+                }
+
+                $opcoes = (array) ($questao['opcoes'] ?? []);
+                $temCorreta = collect($opcoes)->contains(fn($opcao) => !empty($opcao['correta']));
+
+                if (!$temCorreta) {
+                    $validator->errors()->add(
+                        "questoes.$index.opcoes",
+                        'Marque a opção correta da questão.'
+                    );
+                }
+            }
+        });
+
+        return $validator->validate();
     }
 
     private function validationMessages(): array

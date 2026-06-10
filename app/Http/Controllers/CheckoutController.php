@@ -17,12 +17,43 @@ class CheckoutController extends Controller
 {
     private function alunoId(Request $rq){ return auth('aluno')->id() ?? $rq->session()->get('aluno_id'); }
 
+    private function cicloVigente(Request $rq, Cursos $curso): ?Matriculas
+    {
+        $alunoId = $this->alunoId($rq);
+
+        return $alunoId ? Matriculas::cicloVigente((int) $alunoId, (int) $curso->id) : null;
+    }
+
+    private function mensagemCicloVigente(Cursos $curso, Matriculas $matricula): string
+    {
+        if ($matricula->data_vencimento) {
+            return "Você já possui o curso {$curso->titulo} válido até {$matricula->data_vencimento->format('d/m/Y')}.";
+        }
+
+        return "Você já possui acesso ativo ao curso {$curso->titulo}.";
+    }
+
     public function add(Request $rq, Cursos $curso)
     {
+        if ($matricula = $this->cicloVigente($rq, $curso)) {
+            $mensagem = $this->mensagemCicloVigente($curso, $matricula);
+
+            if ($rq->expectsJson()) {
+                return response()->json(['ok' => false, 'msg' => $mensagem], 409);
+            }
+
+            return back()->with('info', $mensagem);
+        }
+
         $cart = collect($rq->session()->get('cart', []));
         $cart->put($curso->id, ['id'=>$curso->id,'titulo'=>$curso->titulo,'preco'=>(float)$curso->preco]);
         $rq->session()->put('cart', $cart->toArray());
-        return back()->with('sucesso','Curso adicionado ao carrinho.');
+
+        if ($rq->expectsJson()) {
+            return response()->json(['ok' => true, 'msg' => 'Curso adicionado ao carrinho.', 'count' => $cart->count()]);
+        }
+
+        return back()->with('success','Curso adicionado ao carrinho.');
     }
 
     public function validarCupom(Request $r)
@@ -94,7 +125,7 @@ class CheckoutController extends Controller
         $cart = collect($rq->session()->get('cart', []));
         $cart->forget($curso->id);
         $rq->session()->put('cart', $cart->toArray());
-        return back()->with('sucesso','Curso removido do carrinho.');
+        return back()->with('success','Curso removido do carrinho.');
     }
 
     public function cart(Request $rq)
@@ -113,6 +144,31 @@ class CheckoutController extends Controller
         abort_if(!$aluno, 403);
 
         $cart = collect($r->session()->get('cart', []))->values();
+        abort_if($cart->isEmpty(), 400, 'Carrinho vazio.');
+
+        $bloqueados = [];
+        $cart = $cart->filter(function ($item) use ($aluno, &$bloqueados) {
+            $curso = Cursos::find((int) ($item['id'] ?? 0));
+            if (!$curso) {
+                return false;
+            }
+
+            $matricula = Matriculas::cicloVigente((int) $aluno->id, (int) $curso->id);
+            if (!$matricula) {
+                return true;
+            }
+
+            $bloqueados[] = $this->mensagemCicloVigente($curso, $matricula);
+            return false;
+        })->values();
+
+        if ($bloqueados) {
+            $r->session()->put('cart', $cart->keyBy('id')->toArray());
+
+            return redirect()->route('checkout.cart')
+                ->with('info', implode(' ', $bloqueados));
+        }
+
         abort_if($cart->isEmpty(), 400, 'Carrinho vazio.');
 
         $subtotal = (float) $cart->sum(fn($i) => (float)$i['preco']);
@@ -247,6 +303,11 @@ class CheckoutController extends Controller
         }
         abort_if(!$aluno, 403);
 
+        if ($matricula = Matriculas::cicloVigente((int) $aluno->id, (int) $curso->id)) {
+            return redirect()->route('site.curso.detalhe', $curso->id)
+                ->with('info', $this->mensagemCicloVigente($curso, $matricula));
+        }
+
         $preco = (float)($curso->preco ?? 0);
         $subtotal = $preco;
 
@@ -345,7 +406,17 @@ class CheckoutController extends Controller
         $pedido->loadMissing('itens.curso');
 
         $cart = collect();
+        $bloqueados = [];
         foreach ($pedido->itens as $it) {
+            if (!$it->curso) {
+                continue;
+            }
+
+            if ($matricula = Matriculas::cicloVigente((int) $alunoId, (int) $it->curso_id)) {
+                $bloqueados[] = $this->mensagemCicloVigente($it->curso, $matricula);
+                continue;
+            }
+
             $cart->put($it->curso_id, [
                 'id'     => (int) $it->curso_id,
                 'titulo' => (string) ($it->curso->titulo ?? 'Curso'),
@@ -355,8 +426,17 @@ class CheckoutController extends Controller
         $rq->session()->put('cart', $cart->toArray());
 
         // Leva para o carrinho para o aluno finalizar
-        return redirect()->route('checkout.cart')
-            ->with('sucesso', 'Itens do pedido foram reabertos no carrinho.');
+        if ($cart->isEmpty() && $bloqueados) {
+            return redirect()->route('checkout.cart')
+                ->with('info', implode(' ', $bloqueados));
+        }
+
+        return redirect()->route('checkout.cart')->with(
+            $bloqueados ? 'info' : 'success',
+            $bloqueados
+                ? 'Itens disponíveis foram reabertos no carrinho. ' . implode(' ', $bloqueados)
+                : 'Itens do pedido foram reabertos no carrinho.'
+        );
     }
 
 

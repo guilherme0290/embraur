@@ -106,13 +106,20 @@ class Matriculas extends Model
 
     public static function possuiCicloVigente(int $alunoId, int $cursoId): bool
     {
+        return (bool) self::cicloVigente($alunoId, $cursoId);
+    }
+
+    public static function cicloVigente(int $alunoId, int $cursoId): ?self
+    {
         return self::doAlunoCurso($alunoId, $cursoId)
             ->where(function ($q) {
                 $q->whereNull('data_vencimento')
                     ->orWhere('data_vencimento', '>=', now());
             })
             ->whereIn('status', ['ativo', 'concluido'])
-            ->exists();
+            ->orderByDesc('data_matricula')
+            ->orderByDesc('id')
+            ->first();
     }
 
     public static function criarNovoCiclo(int $alunoId, Cursos $curso): self

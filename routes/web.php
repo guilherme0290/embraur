@@ -202,6 +202,7 @@ Route::prefix('prof')->name('prof.')->group(function () {
         Route::delete('cursos/{curso}/modulos/{modulo}', [ModuloAdminController::class, 'destroy'])->name('cursos.modulos.destroy');
         Route::post('cursos/{curso}/modulos/reordenar', [ModuloAdminController::class, 'reorder'])->name('cursos.modulos.reorder');
         Route::post('cursos/{curso}/modulos/{modulo}/copiar', [ModuloAdminController::class, 'copyToCourse'])->name('cursos.modulos.copy');
+        Route::post('cursos/{curso}/modulos/importar', [ModuloAdminController::class, 'importToCourse'])->name('cursos.modulos.import');
 
         // Aulas
         Route::get('cursos/{curso}/modulos/{modulo}/aulas', [AulaAdminController::class, 'index'])->name('cursos.modulos.aulas.index');

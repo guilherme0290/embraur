@@ -238,6 +238,33 @@
             </div>
         </div>
 
+        @if(isset($curso->id) && isset($modulosImportaveis) && $modulosImportaveis->isNotEmpty())
+            <div class="mb-4 rounded-lg border bg-slate-50 p-3">
+                <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <select class="h-10 rounded-md border px-3 text-sm md:min-w-[360px]" data-import-module-select>
+                        <option value="">Importar módulo completo de outro curso...</option>
+                        @foreach($modulosImportaveis->groupBy('curso_id') as $modulosDoCurso)
+                            <optgroup label="{{ $modulosDoCurso->first()->curso?->titulo ?? 'Curso' }}">
+                                @foreach($modulosDoCurso as $moduloImportavel)
+                                    <option value="{{ $moduloImportavel->id }}">
+                                        {{ $moduloImportavel->titulo }}
+                                        ({{ $moduloImportavel->aulas_count }} aula{{ $moduloImportavel->aulas_count === 1 ? '' : 's' }}{{ $moduloImportavel->quiz_exists ? ', com prova' : ', sem prova' }})
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+                    </select>
+                    <button type="button"
+                            class="btn btn-outline h-10"
+                            data-action="import-module"
+                            data-url="{{ route('prof.cursos.modulos.import', $curso->id) }}">
+                        Importar módulo
+                    </button>
+                </div>
+                <p class="mt-2 text-xs text-slate-500">Importa o módulo inteiro para este curso, incluindo aulas, materiais, prova, questões e opções.</p>
+            </div>
+        @endif
+
         <div id="modulosWrap" class="space-y-4">
             @foreach($modulosForm as $mIdx => $modulo)
                 @php
@@ -251,13 +278,17 @@
                     {{-- Cabeçalho do módulo (colapsável) --}}
                     <div class="flex items-center justify-between px-4 py-3 bg-slate-50 border-b">
                         <div class="flex items-center gap-3">
-                            <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
+                            <button type="button" class="hidden text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle>Arrastar</button>
                             <button type="button" class="toggle-modulo h-8 w-8 rounded-md border bg-white hover:bg-slate-100 grid place-items-center"
                                     aria-expanded="true">
                                 <span class="i">▾</span>
                             </button>
                             <div>
-                                <h3 class="font-semibold">Módulo <span class="mod-num">{{ $mIdx + 1 }}</span></h3>
+                                <h3 class="font-semibold">
+                                    Módulo <span class="mod-num">{{ $mIdx + 1 }}</span>
+                                    <span class="text-slate-400">·</span>
+                                    <span data-module-title-preview>{{ $moduloTitulo ?: 'Sem título' }}</span>
+                                </h3>
                                 {{-- Badge de status da Prova --}}
                                 <div class="mt-1">
                                     @if($quizModulo)
@@ -287,8 +318,7 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button type="button" class="text-xs underline" data-action="move-modulo-up">Subir</button>
-                            <button type="button" class="text-xs underline" data-action="move-modulo-down">Descer</button>
+                            <button type="button" class="text-xs underline" data-action="insert-modulo-after">Inserir abaixo</button>
                             <button type="button" class="text-red-600 hover:underline"
                                     onclick="window.removeModulo(this)">Remover</button>
                         </div>
@@ -321,10 +351,6 @@
                             @foreach($aulasModulo as $aIdx => $aula)
                                 <div class="aula-card grid grid-cols-1 md:grid-cols-4 gap-3 border rounded-md p-3 bg-white" data-aula="{{ $aIdx }}" data-id="{{ data_get($aula, 'id') }}">
                                     <input type="hidden" name="modulos[{{ $mIdx }}][aulas][{{ $aIdx }}][id]" value="{{ data_get($aula, 'id') }}">
-
-                                    <div class="md:col-span-4 flex justify-end">
-                                        <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar aula</button>
-                                    </div>
 
                                     <div class="md:col-span-2">
                                         <label class="block h-5 leading-5 text-sm font-medium whitespace-nowrap">Título da Aula</label>
@@ -399,8 +425,7 @@
                                     @endif
 
                                     <div class="md:col-span-4 text-right">
-                                        <button type="button" class="text-xs underline mr-2" data-action="move-aula-up">Subir</button>
-                                        <button type="button" class="text-xs underline mr-2" data-action="move-aula-down">Descer</button>
+                                        <button type="button" class="text-xs underline mr-2" data-action="insert-aula-after">Inserir abaixo</button>
                                         <button type="button" class="text-red-600 hover:underline" data-action="remove-aula">Remover aula</button>
                                     </div>
                                 </div>
@@ -425,30 +450,9 @@
 
                             <span class="text-xs text-slate-500">Organize as aulas e cadastre a prova do módulo quando estiver pronto</span>
                         </div>
-                        @if(isset($curso->id) && $moduloId && isset($cursosDoProfessor))
-                            <div class="mt-3 flex items-center justify-end gap-2">
-                                <select class="h-9 rounded-md border px-2 text-sm" data-copy-module-destino>
-                                    <option value="">Copiar módulo para...</option>
-                                    @foreach($cursosDoProfessor as $cursoDestino)
-                                        <option value="{{ $cursoDestino->id }}">{{ $cursoDestino->titulo }}</option>
-                                    @endforeach
-                                </select>
-                                <button type="button"
-                                        class="text-sm px-3 py-1 rounded border hover:bg-slate-50"
-                                        data-action="copy-module"
-                                        data-url="{{ route('prof.cursos.modulos.copy', [$curso->id, $moduloId]) }}">
-                                    Copiar módulo
-                                </button>
-                            </div>
-                        @endif
                     </div>
                 </div>
             @endforeach
-        </div>
-
-        <div class="mt-6 flex items-center justify-between">
-            <button type="button" class="btn btn-outline" id="addModuloBtn">＋ Adicionar Módulo</button>
-            <span class="text-xs text-slate-500">Use os botões acima para organizar os módulos</span>
         </div>
     </div>
     @endif
@@ -470,6 +474,24 @@
             <button type="submit" form="cursoForm" name="salvar" value="publicar" class="btn btn-primary h-9">
                 {{ ($mode ?? 'create') === 'edit' ? 'Salvar Alterações' : 'Criar Curso' }}
             </button>
+        </div>
+    </div>
+
+    <div id="deleteQuizModal"
+         class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/45 px-4"
+         data-delete-quiz-modal
+         aria-hidden="true">
+        <div class="w-full max-w-md rounded-lg border bg-white shadow-xl">
+            <div class="border-b px-5 py-4">
+                <h2 class="text-lg font-semibold text-slate-900">Excluir prova do módulo?</h2>
+            </div>
+            <div class="px-5 py-4 text-sm leading-6 text-slate-600">
+                Esta ação removerá a prova e todas as tentativas/respostas dos alunos vinculadas a ela. Essa exclusão não pode ser desfeita.
+            </div>
+            <div class="flex justify-end gap-2 border-t bg-slate-50 px-5 py-4">
+                <button type="button" class="btn btn-outline" data-delete-quiz-cancel>Cancelar</button>
+                <button type="button" class="btn bg-red-600 text-white hover:bg-red-700" data-delete-quiz-confirm>Excluir prova</button>
+            </div>
         </div>
     </div>
 
@@ -670,7 +692,6 @@
         }
 
         const modWrap = document.getElementById('modulosWrap');
-        const addModuloBtn = document.getElementById('addModuloBtn');
 
         function validateRequiredFields() {
             clearInlineErrors();
@@ -780,6 +801,41 @@
             f.submit();
         }
 
+        const deleteQuizModal = document.querySelector('[data-delete-quiz-modal]');
+        const deleteQuizConfirm = deleteQuizModal?.querySelector('[data-delete-quiz-confirm]');
+        const deleteQuizCancel = deleteQuizModal?.querySelector('[data-delete-quiz-cancel]');
+        let pendingDeleteQuizUrl = null;
+
+        function openDeleteQuizModal(url){
+            pendingDeleteQuizUrl = url;
+            deleteQuizModal?.classList.remove('hidden');
+            deleteQuizModal?.classList.add('flex');
+            deleteQuizModal?.setAttribute('aria-hidden', 'false');
+            deleteQuizCancel?.focus();
+        }
+
+        function closeDeleteQuizModal(){
+            pendingDeleteQuizUrl = null;
+            deleteQuizModal?.classList.add('hidden');
+            deleteQuizModal?.classList.remove('flex');
+            deleteQuizModal?.setAttribute('aria-hidden', 'true');
+        }
+
+        deleteQuizCancel?.addEventListener('click', closeDeleteQuizModal);
+        deleteQuizModal?.addEventListener('click', (e) => {
+            if (e.target === deleteQuizModal) closeDeleteQuizModal();
+        });
+        deleteQuizConfirm?.addEventListener('click', () => {
+            if (!pendingDeleteQuizUrl) return;
+            submitDynamicForm(pendingDeleteQuizUrl, {}, 'DELETE');
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && deleteQuizModal?.getAttribute('aria-hidden') === 'false') {
+                closeDeleteQuizModal();
+            }
+        });
+
         async function postJson(url, payload){
             const res = await fetch(url, {
                 method: 'POST',
@@ -814,6 +870,7 @@
                 moduleCard.dataset.modulo = mIdx;
                 const num = moduleCard.querySelector('.mod-num');
                 if (num) num.textContent = mIdx + 1;
+                syncModuleTitlePreview(moduleCard);
 
                 moduleCard.querySelectorAll('[name^="modulos["]').forEach((field) => {
                     field.name = field.name.replace(/^modulos\[\d+\]/, `modulos[${mIdx}]`);
@@ -903,12 +960,24 @@
 
         function bindDragDrop(container, selector, urlResolver){
             let dragged = null;
+            let dragSource = null;
+
+            container.addEventListener('pointerdown', (e) => {
+                const handle = e.target.closest('[data-drag-handle]');
+                if (!handle) return;
+
+                const item = handle.closest(selector);
+                if (!item || item.parentElement !== container) return;
+
+                dragSource = item;
+                item.setAttribute('draggable', 'true');
+            });
 
             container.addEventListener('dragstart', (e) => {
                 const handle = e.target.closest('[data-drag-handle]');
-                if (!handle) return;
-                const item = handle.closest(selector);
-                if (!item || !container.contains(item)) return;
+                const item = dragSource || handle?.closest(selector) || e.target.closest(selector);
+                if (!item || item.parentElement !== container) return;
+
                 dragged = item;
                 item.classList.add('opacity-60');
                 e.dataTransfer.effectAllowed = 'move';
@@ -917,7 +986,9 @@
 
             container.addEventListener('dragend', () => {
                 dragged?.classList.remove('opacity-60');
+                dragged?.removeAttribute('draggable');
                 dragged = null;
+                dragSource = null;
             });
 
             container.addEventListener('dragover', (e) => {
@@ -942,17 +1013,27 @@
                 const ordered = [...without];
                 ordered.splice(insertAt, 0, dragged);
 
+                if (after) {
+                    target.insertAdjacentElement('afterend', dragged);
+                } else {
+                    target.insertAdjacentElement('beforebegin', dragged);
+                }
+                renumberStructureNames();
+
+                const url = urlResolver(dragged, target);
+                if (!url || ordered.some((el) => !el.dataset.id)) return;
+
                 try {
-                    const persisted = await applySavedOrder(container, selector, urlResolver(dragged, target), ordered);
-                    if (!persisted) {
-                        if (after) {
-                            target.insertAdjacentElement('afterend', dragged);
-                        } else {
-                            target.insertAdjacentElement('beforebegin', dragged);
-                        }
-                        renumberStructureNames();
-                    }
+                    const ordens = directItems(container, selector).map((el, idx) => ({
+                        id: Number(el.dataset.id),
+                        ordem: idx + 1,
+                    }));
+
+                    await postJson(url, { ordens });
+                    reorderDomByIds(container, selector, ordens.map((item) => item.id));
                 } catch (err) {
+                    items.forEach((item) => container.appendChild(item));
+                    renumberStructureNames();
                     alert(err.message || 'Não foi possível salvar a ordenação.');
                 }
             });
@@ -970,10 +1051,12 @@
         function setExpanded(card, expanded){
             const btn = card.querySelector('.toggle-modulo');
             const body = card.querySelector('.modulo-body');
+            const dragHandle = card.querySelector(':scope > div [data-drag-handle]');
             if (!btn || !body) return;
             btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
             btn.querySelector('.i').textContent = expanded ? '▾' : '▸';
             body.style.display = expanded ? '' : 'none';
+            dragHandle?.classList.toggle('hidden', expanded);
         }
         function bindModule(card){
             const btn = card.querySelector('.toggle-modulo');
@@ -985,6 +1068,20 @@
         }
         modWrap.querySelectorAll('[data-modulo]').forEach(bindModule);
 
+        function syncModuleTitlePreview(card){
+            const preview = card?.querySelector('[data-module-title-preview]');
+            const input = card?.querySelector(':scope .modulo-body input[name^="modulos["][name$="[titulo]"]');
+            if (preview && input) {
+                preview.textContent = input.value.trim() || 'Sem título';
+            }
+        }
+
+        modWrap.addEventListener('input', (event) => {
+            const input = event.target.closest('input[name^="modulos["][name$="[titulo]"]');
+            if (!input) return;
+            syncModuleTitlePreview(input.closest('[data-modulo]'));
+        });
+
         document.getElementById('btnExpandAll')?.addEventListener('click', ()=>{
             modWrap.querySelectorAll('[data-modulo]').forEach(card=> setExpanded(card, true));
         });
@@ -993,21 +1090,21 @@
         });
 
         // Templates
-        function moduloTemplate(idx){
+        function moduloTemplate(idx, withInitialAula = false){
+            const initialAula = withInitialAula ? aulaTemplate(idx, 0) : '';
             return `
 <div class="rounded-lg border p-0 overflow-hidden" data-modulo="${idx}">
   <div class="flex items-center justify-between px-4 py-3 bg-slate-50 border-b">
     <div class="flex items-center gap-3">
-      <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
+      <button type="button" class="hidden text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle>Arrastar</button>
       <button type="button" class="toggle-modulo h-8 w-8 rounded-md border bg-white hover:bg-slate-100 grid place-items-center" aria-expanded="true"><span class="i">▾</span></button>
       <div>
-        <h3 class="font-semibold">Módulo <span class="mod-num">${idx+1}</span></h3>
+        <h3 class="font-semibold">Módulo <span class="mod-num">${idx+1}</span> <span class="text-slate-400">·</span> <span data-module-title-preview>Sem título</span></h3>
         <div class="mt-1"><span class="pill bg-slate-100 text-slate-700 border border-slate-200">⏳ Sem prova</span></div>
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <button type="button" class="text-xs underline" data-action="move-modulo-up">Subir</button>
-      <button type="button" class="text-xs underline" data-action="move-modulo-down">Descer</button>
+      <button type="button" class="text-xs underline" data-action="insert-modulo-after">Inserir abaixo</button>
       <button type="button" class="text-red-600 hover:underline" onclick="window.removeModulo(this)">Remover</button>
     </div>
   </div>
@@ -1022,7 +1119,7 @@
         <textarea name="modulos[${idx}][descricao]" rows="3" class="js-ckeditor mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"></textarea>
       </div>
     </div>
-    <div class="space-y-6" data-aulas></div>
+    <div class="space-y-6" data-aulas>${initialAula}</div>
     <div class="mt-4 flex items-center justify-between flex-wrap gap-3">
       <div class="flex items-center gap-2">
         <button type="button" class="btn btn-outline" data-action="add-aula">＋ Adicionar Aula</button>
@@ -1037,9 +1134,6 @@
         function aulaTemplate(mIdx, aIdx){
             return `
 <div class="aula-card grid grid-cols-1 md:grid-cols-4 gap-3 border rounded-md p-3 bg-white" data-aula="${aIdx}">
-  <div class="md:col-span-4 flex justify-end">
-    <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar aula</button>
-  </div>
   <div class="md:col-span-2">
     <label class="block h-5 leading-5 text-sm font-medium whitespace-nowrap">Título da Aula</label>
     <input name="modulos[${mIdx}][aulas][${aIdx}][titulo]" required data-required-field="1" data-label="Título da aula" class="mt-1 w-full h-10 rounded-md border border-slate-300 px-3 focus:border-slate-400 focus:ring-2 focus:ring-slate-200" placeholder="Ex: Criando componentes">
@@ -1074,8 +1168,7 @@
   </div>
   ` : ``}
   <div class="md:col-span-4 text-right">
-    <button type="button" class="text-xs underline mr-2" data-action="move-aula-up">Subir</button>
-    <button type="button" class="text-xs underline mr-2" data-action="move-aula-down">Descer</button>
+    <button type="button" class="text-xs underline mr-2" data-action="insert-aula-after">Inserir abaixo</button>
     <button type="button" class="text-red-600 hover:underline" data-action="remove-aula">Remover aula</button>
   </div>
 </div>`;
@@ -1088,38 +1181,31 @@
             return m ? parseInt(m[1],10) : null;
         }
 
-        // Delegação: add-aula / remove-aula
-        modWrap.addEventListener('click', (e)=>{
+        const structureSection = document.getElementById('sec-estrutura') || modWrap;
+
+        // Delegação: importar módulo, add-aula, remove-aula e ordenação
+        structureSection.addEventListener('click', (e)=>{
             const add = e.target.closest('[data-action="add-aula"]');
             if (add) {
                 e.preventDefault();
-                const card = add.closest('[data-modulo]');
-                const mIdx = getModuloIndexFromNames(card);
-                const cont = card.querySelector('[data-aulas]');
-                if (!cont) return console.warn('Container de aulas não encontrado para módulo', mIdx);
-                const next = cont.querySelectorAll('[data-aula]').length;
-                cont.insertAdjacentHTML('beforeend', aulaTemplate(mIdx, next));
-                window.initCKEditorsIn(cont); // inicializa CK nos novos textareas
+                insertAulaAfter(null, add.closest('[data-modulo]'));
                 return;
             }
             const delQuiz = e.target.closest('[data-action="delete-quiz"]');
             if (delQuiz) {
                 e.preventDefault();
-                if (confirm('Excluir a prova deste módulo? As tentativas e respostas vinculadas também serão removidas.')) {
-                    submitDynamicForm(delQuiz.dataset.url, {}, 'DELETE');
-                }
+                openDeleteQuizModal(delQuiz.dataset.url);
                 return;
             }
-            const copyModule = e.target.closest('[data-action="copy-module"]');
-            if (copyModule) {
+            const importModule = e.target.closest('[data-action="import-module"]');
+            if (importModule) {
                 e.preventDefault();
-                const wrap = copyModule.closest('.modulo-body');
-                const destino = wrap?.querySelector('[data-copy-module-destino]')?.value;
-                if (!destino) {
-                    alert('Selecione o curso de destino.');
+                const origem = document.querySelector('[data-import-module-select]')?.value;
+                if (!origem) {
+                    alert('Selecione o módulo que deseja importar.');
                     return;
                 }
-                submitDynamicForm(copyModule.dataset.url, { curso_destino_id: destino });
+                submitDynamicForm(importModule.dataset.url, { modulo_origem_id: origem });
                 return;
             }
             const rm = e.target.closest('[data-action="remove-aula"]');
@@ -1129,34 +1215,16 @@
                 renumberStructureNames();
                 return;
             }
-            const moveModuleUp = e.target.closest('[data-action="move-modulo-up"]');
-            if (moveModuleUp) {
+            const insertModuleAfter = e.target.closest('[data-action="insert-modulo-after"]');
+            if (insertModuleAfter) {
                 e.preventDefault();
-                const item = moveModuleUp.closest('[data-modulo]');
-                moveElementPersisted(item, -1, '[data-modulo]', modWrap, item?.dataset.reorderUrl || '');
+                insertModuloAfter(insertModuleAfter.closest('[data-modulo]'));
                 return;
             }
-            const moveModuleDown = e.target.closest('[data-action="move-modulo-down"]');
-            if (moveModuleDown) {
+            const insertAulaAfterButton = e.target.closest('[data-action="insert-aula-after"]');
+            if (insertAulaAfterButton) {
                 e.preventDefault();
-                const item = moveModuleDown.closest('[data-modulo]');
-                moveElementPersisted(item, 1, '[data-modulo]', modWrap, item?.dataset.reorderUrl || '');
-                return;
-            }
-            const moveAulaUp = e.target.closest('[data-action="move-aula-up"]');
-            if (moveAulaUp) {
-                e.preventDefault();
-                const item = moveAulaUp.closest('[data-aula]');
-                const container = item?.parentElement;
-                moveElementPersisted(item, -1, '[data-aula]', container, container?.dataset.reorderUrl || '');
-                return;
-            }
-            const moveAulaDown = e.target.closest('[data-action="move-aula-down"]');
-            if (moveAulaDown) {
-                e.preventDefault();
-                const item = moveAulaDown.closest('[data-aula]');
-                const container = item?.parentElement;
-                moveElementPersisted(item, 1, '[data-aula]', container, container?.dataset.reorderUrl || '');
+                insertAulaAfter(insertAulaAfterButton.closest('[data-aula]'));
             }
         });
 
@@ -1166,26 +1234,51 @@
                 bindDragDrop(modWrap, '[data-modulo]', (dragged) => dragged?.dataset.reorderUrl || '');
             }
 
-            root.querySelectorAll('[data-aulas]').forEach((container) => {
-                if (container.dataset.dragBound === '1') return;
-                container.dataset.dragBound = '1';
-                bindDragDrop(container, '[data-aula]', () => container.dataset.reorderUrl || '');
-            });
         }
 
         bindCourseDragDrop(document);
 
+        function insertAulaAfter(referenceAula = null, moduleCard = null){
+            const card = moduleCard || referenceAula?.closest('[data-modulo]');
+            const mIdx = getModuloIndexFromNames(card);
+            const cont = card?.querySelector('[data-aulas]');
+            if (!cont) return console.warn('Container de aulas não encontrado para módulo', mIdx);
+
+            const next = cont.querySelectorAll('[data-aula]').length;
+            const html = aulaTemplate(mIdx, next);
+            if (referenceAula) {
+                referenceAula.insertAdjacentHTML('afterend', html);
+            } else {
+                cont.insertAdjacentHTML('beforeend', html);
+            }
+
+            const aula = referenceAula ? referenceAula.nextElementSibling : cont.querySelector('[data-aula]:last-child');
+            renumberStructureNames();
+            window.initCKEditorsIn(aula);
+            bindCourseDragDrop(card);
+            aula.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            aula.querySelector('input[name$="[titulo]"]')?.focus();
+        }
+
         // Adicionar módulo
-        function addModulo(){
+        function insertModuloAfter(referenceCard = null){
             const idx = modWrap.querySelectorAll('[data-modulo]').length;
-            modWrap.insertAdjacentHTML('beforeend', moduloTemplate(idx));
-            const card = modWrap.querySelector('[data-modulo]:last-child');
+            const html = moduloTemplate(idx, true);
+
+            if (referenceCard) {
+                referenceCard.insertAdjacentHTML('afterend', html);
+            } else {
+                modWrap.insertAdjacentHTML('beforeend', html);
+            }
+
+            const card = referenceCard ? referenceCard.nextElementSibling : modWrap.querySelector('[data-modulo]:last-child');
             bindModule(card);
-            renumberModules();
+            renumberStructureNames();
             window.initCKEditorsIn(card); // inicializa CK no novo módulo
             bindCourseDragDrop(card);
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.querySelector('input[name$="[titulo]"]')?.focus();
         }
-        addModuloBtn?.addEventListener('click', addModulo);
 
     })();
 </script>

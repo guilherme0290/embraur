@@ -1,3 +1,7 @@
+@php
+    $questoes = collect(old('questoes', $questoes ?? []));
+@endphp
+
 <div class="rounded-xl border p-4">
     <div class="mb-3">
         <h2 class="font-semibold">Questões</h2>
@@ -11,66 +15,72 @@
                 @endif
                 <div class="flex justify-between items-center mb-3">
                     <div class="flex items-center gap-2">
-                        <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
+                        <button type="button" class="hidden text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
+                        <button type="button" class="toggle-questao h-8 w-8 rounded-md border bg-white hover:bg-slate-100 grid place-items-center" aria-expanded="true">
+                            <span class="i">▾</span>
+                        </button>
                         <h4 class="font-semibold">Questão <span class="q-num">{{ $qIdx+1 }}</span></h4>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" class="text-xs underline" data-action="mover-questao-cima">Subir</button>
-                        <button type="button" class="text-xs underline" data-action="mover-questao-baixo">Descer</button>
-                        <button type="button" class="text-xs underline" data-action="inserir-questao-abaixo">Inserir abaixo</button>
+                </div>
+
+                <div class="questao-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="md:col-span-2">
+                            <label class="text-sm font-medium">Enunciado *</label>
+                            <textarea
+                                id="enunciado-{{ $qIdx }}"
+                                data-role="enunciado"
+                                name="questoes[{{ $qIdx }}][enunciado]"
+                                rows="6"
+                                class="mt-1 w-full rounded-md border px-3 py-2"
+                            >{!! old("questoes.$qIdx.enunciado", $questao['enunciado'] ?? '') !!}</textarea>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium">Tipo *</label>
+                            <input type="text" value="Múltipla Escolha" readonly
+                                   class="mt-1 w-full h-10 rounded-md border px-3 bg-slate-100 text-slate-700 cursor-not-allowed">
+                            <input type="hidden" name="questoes[{{ $qIdx }}][tipo]" value="multipla" data-role="tipo">
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium">Pontuação</label>
+                            <input type="number" min="0.25" step="0.25"
+                                   name="questoes[{{ $qIdx }}][pontuacao]"
+                                   value="{{ $questao['pontuacao'] ?? 1 }}"
+                                   class="mt-1 w-full h-10 rounded-md border px-3">
+                        </div>
+                    </div>
+
+                    {{-- Opções (mostra somente em múltipla) --}}
+                    @php $opcoes = $questao['opcoes'] ?? [['texto'=>'']]; @endphp
+                    <div class="mt-3 space-y-2 opcoesWrap">
+                        @error("questoes.$qIdx.opcoes")
+                            <div class="text-xs text-red-600">{{ $message }}</div>
+                        @enderror
+                        @foreach($opcoes as $oIdx => $op)
+                            <div class="flex items-center gap-2 border rounded px-3 py-2 bg-white" data-op>
+                                @if(!empty($op['id']))
+                                    <input type="hidden" name="questoes[{{ $qIdx }}][opcoes][{{ $oIdx }}][id]" value="{{ $op['id'] }}">
+                                @endif
+                                <input type="text" name="questoes[{{ $qIdx }}][opcoes][{{ $oIdx }}][texto]"
+                                       value="{{ $op['texto'] ?? '' }}" placeholder="Opção..."
+                                       class="flex-1 h-9 rounded-md border px-2">
+                                <label class="flex items-center gap-1 text-sm">
+                                    <input type="checkbox" name="questoes[{{ $qIdx }}][opcoes][{{ $oIdx }}][correta]" value="1"
+                                        @checked(!empty($op['correta']))> Correta
+                                </label>
+                                <button type="button" class="text-red-600 text-xs"
+                                        onclick="this.closest('[data-op]').remove()">Remover</button>
+                            </div>
+                        @endforeach
+
+                        <button type="button" class="text-xs px-2 py-1 rounded border hover:bg-slate-50"
+                                onclick="window.__quizzes_addOpcao && window.__quizzes_addOpcao(this)">＋ Adicionar Opção</button>
+
+                    </div>
+                    <div class="mt-3 text-right">
+                        <button type="button" class="text-xs underline mr-2" data-action="inserir-questao-abaixo">Inserir abaixo</button>
                         <button type="button" class="text-red-600 text-xs" data-action="remover-questao">Remover</button>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="md:col-span-2">
-                        <label class="text-sm font-medium">Enunciado *</label>
-                        <textarea
-                            id="enunciado-{{ $qIdx }}"
-                            data-role="enunciado"
-                            name="questoes[{{ $qIdx }}][enunciado]"
-                            rows="6"
-                            class="mt-1 w-full rounded-md border px-3 py-2"
-                        >{!! old("questoes.$qIdx.enunciado", $questao['enunciado'] ?? '') !!}</textarea>
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium">Tipo *</label>
-                        <input type="text" value="Múltipla Escolha" readonly
-                               class="mt-1 w-full h-10 rounded-md border px-3 bg-slate-100 text-slate-700 cursor-not-allowed">
-                        <input type="hidden" name="questoes[{{ $qIdx }}][tipo]" value="multipla" data-role="tipo">
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium">Pontuação</label>
-                        <input type="number" min="0.25" step="0.25"
-                               name="questoes[{{ $qIdx }}][pontuacao]"
-                               value="{{ $questao['pontuacao'] ?? 1 }}"
-                               class="mt-1 w-full h-10 rounded-md border px-3">
-                    </div>
-                </div>
-
-                {{-- Opções (mostra somente em múltipla) --}}
-                @php $opcoes = $questao['opcoes'] ?? [['texto'=>'']]; @endphp
-                <div class="mt-3 space-y-2 opcoesWrap">
-                    @foreach($opcoes as $oIdx => $op)
-                        <div class="flex items-center gap-2 border rounded px-3 py-2 bg-white" data-op>
-                            @if(!empty($op['id']))
-                                <input type="hidden" name="questoes[{{ $qIdx }}][opcoes][{{ $oIdx }}][id]" value="{{ $op['id'] }}">
-                            @endif
-                            <input type="text" name="questoes[{{ $qIdx }}][opcoes][{{ $oIdx }}][texto]"
-                                   value="{{ $op['texto'] ?? '' }}" placeholder="Opção..."
-                                   class="flex-1 h-9 rounded-md border px-2">
-                            <label class="flex items-center gap-1 text-sm">
-                                <input type="checkbox" name="questoes[{{ $qIdx }}][opcoes][{{ $oIdx }}][correta]" value="1"
-                                    @checked(!empty($op['correta']))> Correta
-                            </label>
-                            <button type="button" class="text-red-600 text-xs"
-                                    onclick="this.closest('[data-op]').remove()">Remover</button>
-                        </div>
-                    @endforeach
-
-                    <button type="button" class="text-xs px-2 py-1 rounded border hover:bg-slate-50"
-                            onclick="window.__quizzes_addOpcao && window.__quizzes_addOpcao(this)">＋ Adicionar Opção</button>
-
                 </div>
             </div>
 
@@ -153,6 +163,12 @@
             }
         }
 
+        function syncEditorsToTextareas(){
+            for (const [textarea, ed] of editors.entries()) {
+                textarea.value = ed.getData();
+            }
+        }
+
         // --- Renumeração das questões e atualização dos names ---
         function renumberQuestoes(){
             if (!wrap) return;
@@ -203,54 +219,79 @@
             renumberQuestoes();
         }
 
+        function setQuestaoExpanded(card, expanded){
+            const btn = card?.querySelector('.toggle-questao');
+            const body = card?.querySelector('.questao-body');
+            const dragHandle = card?.querySelector('[data-drag-handle]');
+            if (!btn || !body) return;
+
+            btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            btn.querySelector('.i').textContent = expanded ? '▾' : '▸';
+            body.style.display = expanded ? '' : 'none';
+            dragHandle?.classList.toggle('hidden', expanded);
+        }
+
+        function bindQuestaoCollapse(root = document){
+            root.querySelectorAll('.questao-card').forEach((card) => {
+                if (card.dataset.collapseBound === '1') return;
+                card.dataset.collapseBound = '1';
+                const btn = card.querySelector('.toggle-questao');
+                btn?.addEventListener('click', () => {
+                    setQuestaoExpanded(card, btn.getAttribute('aria-expanded') !== 'true');
+                });
+                setQuestaoExpanded(card, true);
+            });
+        }
+
         // --- Template do Card de Questão ---
         function questaoTemplate(idx){
             return `
       <div class="questao-card border rounded-md p-4 bg-slate-50" data-q="${idx}">
         <div class="flex justify-between items-center mb-3">
           <div class="flex items-center gap-2">
-            <button type="button" class="text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
+            <button type="button" class="hidden text-xs px-2 py-1 rounded border bg-white cursor-grab" data-drag-handle draggable="true">Arrastar</button>
+            <button type="button" class="toggle-questao h-8 w-8 rounded-md border bg-white hover:bg-slate-100 grid place-items-center" aria-expanded="true"><span class="i">▾</span></button>
             <h4 class="font-semibold">Questão <span class="q-num">${idx+1}</span></h4>
           </div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="text-xs underline" data-action="mover-questao-cima">Subir</button>
-            <button type="button" class="text-xs underline" data-action="mover-questao-baixo">Descer</button>
-            <button type="button" class="text-xs underline" data-action="inserir-questao-abaixo">Inserir abaixo</button>
+        </div>
+
+        <div class="questao-body">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="md:col-span-2">
+              <label class="text-sm font-medium">Enunciado *</label>
+              <textarea name="questoes[${idx}][enunciado]" rows="3"
+                        data-role="enunciado"
+                        class="mt-1 w-full rounded-md border px-3 py-2"></textarea>
+            </div>
+            <div>
+              <label class="text-sm font-medium">Tipo *</label>
+              <input type="text" value="Múltipla Escolha" readonly
+                     class="mt-1 w-full h-10 rounded-md border px-3 bg-slate-100 text-slate-700 cursor-not-allowed">
+              <input type="hidden" name="questoes[${idx}][tipo]" value="multipla" data-role="tipo">
+            </div>
+            <div>
+              <label class="text-sm font-medium">Pontuação</label>
+              <input type="number" min="0.25" step="0.25" name="questoes[${idx}][pontuacao]" value="1"
+                     class="mt-1 w-full h-10 rounded-md border px-3">
+            </div>
+          </div>
+
+          <div class="mt-3 space-y-2 opcoesWrap">
+            <div class="flex items-center gap-2 border rounded px-3 py-2 bg-white" data-op>
+              <input type="text" name="questoes[${idx}][opcoes][0][texto]" placeholder="Opção..."
+                     class="flex-1 h-9 rounded-md border px-2">
+              <label class="flex items-center gap-1 text-sm">
+                <input type="checkbox" name="questoes[${idx}][opcoes][0][correta]" value="1"> Correta
+              </label>
+              <button type="button" class="text-red-600 text-xs" data-action="remover-opcao">Remover</button>
+            </div>
+            <button type="button" class="text-xs px-2 py-1 rounded border hover:bg-slate-50"
+                    data-action="adicionar-opcao">＋ Adicionar Opção</button>
+          </div>
+          <div class="mt-3 text-right">
+            <button type="button" class="text-xs underline mr-2" data-action="inserir-questao-abaixo">Inserir abaixo</button>
             <button type="button" class="text-red-600 text-xs" data-action="remover-questao">Remover</button>
           </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div class="md:col-span-2">
-            <label class="text-sm font-medium">Enunciado *</label>
-            <textarea name="questoes[${idx}][enunciado]" rows="3"
-                      data-role="enunciado"
-                      class="mt-1 w-full rounded-md border px-3 py-2"></textarea>
-          </div>
-          <div>
-            <label class="text-sm font-medium">Tipo *</label>
-            <input type="text" value="Múltipla Escolha" readonly
-                   class="mt-1 w-full h-10 rounded-md border px-3 bg-slate-100 text-slate-700 cursor-not-allowed">
-            <input type="hidden" name="questoes[${idx}][tipo]" value="multipla" data-role="tipo">
-          </div>
-          <div>
-            <label class="text-sm font-medium">Pontuação</label>
-            <input type="number" min="0.25" step="0.25" name="questoes[${idx}][pontuacao]" value="1"
-                   class="mt-1 w-full h-10 rounded-md border px-3">
-          </div>
-        </div>
-
-        <div class="mt-3 space-y-2 opcoesWrap">
-          <div class="flex items-center gap-2 border rounded px-3 py-2 bg-white" data-op>
-            <input type="text" name="questoes[${idx}][opcoes][0][texto]" placeholder="Opção..."
-                   class="flex-1 h-9 rounded-md border px-2">
-            <label class="flex items-center gap-1 text-sm">
-              <input type="checkbox" name="questoes[${idx}][opcoes][0][correta]" value="1"> Correta
-            </label>
-            <button type="button" class="text-red-600 text-xs" data-action="remover-opcao">Remover</button>
-          </div>
-          <button type="button" class="text-xs px-2 py-1 rounded border hover:bg-slate-50"
-                  data-action="adicionar-opcao">＋ Adicionar Opção</button>
         </div>
       </div>`;
         }
@@ -265,6 +306,7 @@
             // Inicializa CKEditor apenas para o novo textarea
             const newTextarea = card.querySelector('textarea[data-role="enunciado"]');
             initCkOn(newTextarea);
+            bindQuestaoCollapse(card);
 
             // Ajusta visibilidade das opções conforme tipo atual
             const sel = card.querySelector('[data-role="tipo"]');
@@ -327,6 +369,7 @@
             card.insertAdjacentHTML('afterend', questaoTemplate(idx));
             const inserted = card.nextElementSibling;
             initCkOn(inserted.querySelector('textarea[data-role="enunciado"]'));
+            bindQuestaoCollapse(inserted);
             renumberQuestoes();
         }
 
@@ -429,14 +472,6 @@
                     if (card) removeQuestao(card);
                 }
 
-                if (t.matches('[data-action="mover-questao-cima"]')){
-                    moveQuestao(t.closest('.questao-card'), -1);
-                }
-
-                if (t.matches('[data-action="mover-questao-baixo"]')){
-                    moveQuestao(t.closest('.questao-card'), 1);
-                }
-
                 if (t.matches('[data-action="inserir-questao-abaixo"]')){
                     insertQuestaoAfter(t.closest('.questao-card'));
                 }
@@ -462,16 +497,13 @@
 
             // Inicializa CKEditor nos textareas já existentes
             document.querySelectorAll('textarea[data-role="enunciado"]').forEach(initCkOn);
+            bindQuestaoCollapse(document);
             bindQuestionDragDrop();
 
             // Sincroniza dados dos editores no submit do primeiro <form> ancestral
             const form = wrap?.closest('form') || document.querySelector('form');
             if (form) {
-                form.addEventListener('submit', () => {
-                    for (const [textarea, ed] of editors.entries()) {
-                        textarea.value = ed.getData();
-                    }
-                });
+                form.addEventListener('submit', syncEditorsToTextareas, true);
             }
         }
 

@@ -203,8 +203,16 @@ class CursoAdminController extends Controller
         $cursosDoProfessor = Cursos::where('professor_id', session('prof_id'))
             ->orderBy('titulo')
             ->get(['id', 'titulo']);
+        $modulosImportaveis = Modulos::with('curso:id,titulo')
+            ->withCount('aulas')
+            ->withExists('quiz')
+            ->whereHas('curso', fn($q) => $q->where('professor_id', session('prof_id')))
+            ->where('curso_id', '!=', $curso->id)
+            ->orderBy('curso_id')
+            ->orderBy('ordem')
+            ->get(['id', 'curso_id', 'titulo']);
 
-        return view('prof.cursos.edit', compact('curso','categorias','quizzesDoCurso','cursosDoProfessor'));
+        return view('prof.cursos.edit', compact('curso','categorias','quizzesDoCurso','cursosDoProfessor','modulosImportaveis'));
 
 
     }

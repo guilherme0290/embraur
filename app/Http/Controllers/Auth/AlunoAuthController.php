@@ -8,6 +8,7 @@ use App\Models\Matriculas;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -63,23 +64,25 @@ class AlunoAuthController extends Controller
     {
         $intended = $request->input('intended');   // URL de volta (ex.: detalhe do curso)
         $cursoId  = $request->input('curso');      // id do curso (se veio do botão "Comprar agora")
+        $dataNascimento = null;
 
         if ($request->filled('data_nascimento')) {
             try {
                 $dt = Carbon::createFromFormat('d/m/Y', $request->input('data_nascimento'));
-                // opcional: valida se é uma data real (Carbon já lança exceção se for inválida)
-                $request->merge(['data_nascimento' => $dt->format('Y-m-d')]);
+                $dataNascimento = $dt->format('Y-m-d');
             } catch (\Exception $e) {
                 return back()
                     ->withErrors(['data_nascimento' => 'Informe a data no formato DD/MM/AAAA.'])
-                    ->withInput();
+                    ->withInput($request->except(['password', 'password_confirmation']));
             }
         }
 
         $cpf            = preg_replace('/\D+/', '', $request->cpf ?? '');
         $telefone       = preg_replace('/\D+/', '', $request->telefone ?? '');
-
-
+        $payload = $request->all();
+        $payload['cpf'] = $cpf;
+        $payload['telefone'] = $telefone;
+        $payload['data_nascimento'] = $dataNascimento;
 
 
         // 3) Regras, mensagens e rótulos amigáveis
@@ -97,6 +100,9 @@ class AlunoAuthController extends Controller
             'email'                     => 'Informe um e-mail válido.',
             'min'                       => 'O campo :attribute deve ter ao menos :min caracteres.',
             'unique'                    => 'Este :attribute já está cadastrado.',
+            'cpf.unique'                => 'Este CPF já está cadastrado. Faça login ou recupere sua senha.',
+            'email.unique'              => 'Este e-mail já está cadastrado. Faça login ou recupere sua senha.',
+            'telefone.unique'           => 'Este celular já está cadastrado.',
             'data_nascimento.date'      => 'Data de nascimento inválida. Use o formato DD/MM/AAAA (ex.: 25/02/1996).',
             'data_nascimento.before'    => 'A data de nascimento deve ser anterior a hoje.',
             'data_nascimento.after'     => 'A data de nascimento deve ser posterior a 01/01/1900.',
@@ -111,7 +117,7 @@ class AlunoAuthController extends Controller
             'data_nascimento' => 'data de nascimento',
         ];
 
-        $validator = Validator::make($request->all(), $rules, $messages, $attributes);
+        $validator = Validator::make($payload, $rules, $messages, $attributes);
 
         if ($validator->fails()) {
             // Resposta HTML (volta para o form) com mensagem geral amigável
@@ -119,7 +125,7 @@ class AlunoAuthController extends Controller
                 return back()
                     ->with('error', 'Não foi possível concluir o cadastro. Revise os campos destacados.')
                     ->withErrors($validator)
-                    ->withInput();
+                    ->withInput($request->except(['password', 'password_confirmation']));
             }
             // Resposta JSON (caso SPA/AJAX)
             return response()->json([
@@ -132,16 +138,27 @@ class AlunoAuthController extends Controller
 
 
         // Cria e autentica o aluno
-        $aluno = User::createOrFirst([
-            'nome_completo'   => $data['nome'],
-            'cpf'             => $cpf,
-            'email'           => $data['email'],
-            'password'        => $data['password'],   // mutator do Model hasheia
-            'tipo_usuario'    => 'aluno',
-            'status'          => 'ativo',
-            'telefone'        => $telefone,
-            'data_nascimento' => $data['data_nascimento'],
-        ]);
+        try {
+            $aluno = User::create([
+                'nome_completo'   => $data['nome'],
+                'cpf'             => $data['cpf'],
+                'email'           => $data['email'],
+                'password'        => $data['password'],   // mutator do Model hasheia
+                'tipo_usuario'    => 'aluno',
+                'status'          => 'ativo',
+                'telefone'        => $data['telefone'],
+                'data_nascimento' => $data['data_nascimento'],
+            ]);
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return back()
+                    ->with('error', 'Não foi possível concluir o cadastro. Revise os campos destacados.')
+                    ->withErrors(['cpf' => 'Este CPF, e-mail ou celular já está cadastrado. Faça login ou recupere sua senha.'])
+                    ->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            throw $e;
+        }
 
         auth('aluno')->login($aluno);
         $request->session()->regenerate();
@@ -161,9 +178,15 @@ class AlunoAuthController extends Controller
 
             // Se o curso for grátis, você pode matricular direto e pular checkout
             if ((float)($curso->preco ?? 0) <= 0) {
-                if (!Matriculas::possuiCicloVigente((int) $aluno->id, (int) $curso->id)) {
-                    Matriculas::criarNovoCiclo((int) $aluno->id, $curso);
+                if ($matricula = Matriculas::cicloVigente((int) $aluno->id, (int) $curso->id)) {
+                    $mensagem = $matricula->data_vencimento
+                        ? "Cadastro realizado! Você já possui este curso válido até {$matricula->data_vencimento->format('d/m/Y')}."
+                        : 'Cadastro realizado! Você já possui acesso ativo a este curso.';
+
+                    return redirect()->route('aluno.dashboard')->with('info', $mensagem);
                 }
+
+                Matriculas::criarNovoCiclo((int) $aluno->id, $curso);
 
                 return redirect()->route('aluno.dashboard')
                     ->with('success', 'Cadastro realizado! Acesso ao curso liberado.');

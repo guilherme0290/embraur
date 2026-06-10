@@ -13,10 +13,16 @@ class MatriculaController extends Controller
     {
         $alunoId = $request->session()->get('aluno_id');
 
-        if (!Matriculas::possuiCicloVigente((int) $alunoId, (int) $curso->id)) {
-            Matriculas::criarNovoCiclo((int) $alunoId, $curso);
+        if ($matricula = Matriculas::cicloVigente((int) $alunoId, (int) $curso->id)) {
+            $mensagem = $matricula->data_vencimento
+                ? "Você já possui este curso válido até {$matricula->data_vencimento->format('d/m/Y')}."
+                : 'Você já possui acesso ativo a este curso.';
+
+            return redirect()->route('aluno.dashboard')->with('info', $mensagem);
         }
 
-        return redirect()->route('aluno.dashboard')->with('ok','Matrícula realizada com sucesso!');
+        Matriculas::criarNovoCiclo((int) $alunoId, $curso);
+
+        return redirect()->route('aluno.dashboard')->with('success','Matrícula realizada com sucesso!');
     }
 }
