@@ -199,7 +199,7 @@ class StudentCertificatesController extends Controller
         $pdf->SetDrawColor(0,0,0);
         //$pdf->Rect(123, 52, 60, 10);
         $pdf->SetFont('Arial','B',25);
-        $pdf->SetXY(20, 66);
+        $pdf->SetXY(20, 62);
         $pdf->Cell(257, 10, $toPdf('CERTIFICADO'), 0, 0, 'C');
 
         // Nome (sublinhado)
