@@ -72,11 +72,14 @@ class CursoGate
         if (isset($t->nota_normalizada_0a10)) {
             return max(0, min(10, (float)$t->nota_normalizada_0a10));
         }
-        if (isset($t->nota_obtida)) {
-            return max(0, min(10, (float)$t->nota_obtida));
+        if (isset($t->nota_obtida, $t->nota_maxima) && (float) $t->nota_maxima > 0) {
+            return max(0, min(10, ((float) $t->nota_obtida / (float) $t->nota_maxima) * 10.0));
         }
         if (isset($t->pontuacao_max) && $t->pontuacao_max > 0) {
             return max(0, min(10, (float)(($t->pontuacao_obtida ?? 0) / $t->pontuacao_max) * 10.0));
+        }
+        if (isset($t->nota_obtida)) {
+            return max(0, min(10, (float)$t->nota_obtida));
         }
         return 0.0;
     }

@@ -19,6 +19,12 @@
                             <div class="w-10 h-10 bg-gray-200 rounded-md"></div>
                             <div class="flex-1">
                                 <div class="text-sm font-medium">{{ $c['titulo'] }}</div>
+                                <div class="text-xs text-gray-500">
+                                    Ciclo {{ $c['ciclo'] }} • {{ ucfirst($c['status']) }}
+                                    @if(!empty($c['data_vencimento']))
+                                        • vence em {{ $c['data_vencimento'] }}
+                                    @endif
+                                </div>
                                 <div class="mt-2">
                                     <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                                         <div class="h-2 rounded-full" style="width: {{ $c['progresso'] }}%; background: linear-gradient(90deg, #2563eb, #60a5fa);"></div>

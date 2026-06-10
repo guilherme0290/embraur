@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Categorias;
 use App\Models\Cursos;
+use App\Models\Matriculas;
 use Illuminate\Http\Request;
 
 class CursoController extends Controller
@@ -50,7 +51,12 @@ class CursoController extends Controller
             //'avaliacoes.usuario'
         ])->findOrFail($id);
 
-        return view('site.curso-detalhe', compact('curso'));
+        $alunoId = auth('aluno')->id() ?? request()->session()->get('aluno_id');
+        $matriculaVigente = $alunoId
+            ? Matriculas::cicloVigente((int) $alunoId, (int) $curso->id)
+            : null;
+
+        return view('site.curso-detalhe', compact('curso', 'matriculaVigente'));
 
 //        return response()->json($curso);
     }

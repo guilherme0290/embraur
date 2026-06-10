@@ -16,11 +16,13 @@ class QuizQuestao extends Model
         'enunciado',
         'tipo',        // 'multipla' | 'dissertativa' (ajuste ao seu enum/uso)
         'pontuacao',   // pontos da questão
+        'ordem',
         'id',
     ];
 
     protected $casts = [
         'pontuacao' => 'float',
+        'ordem' => 'integer',
     ];
 
     /* ----------------------------- RELACIONAMENTOS ----------------------------- */

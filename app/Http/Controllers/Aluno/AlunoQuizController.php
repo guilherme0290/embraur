@@ -25,8 +25,11 @@ class AlunoQuizController extends Controller
         $alunoId = auth('aluno')->id() ?? $rq->session()->get('aluno_id');
         abort_if(!$alunoId, 403);
 
-        $matricula = Matriculas::where('aluno_id',$alunoId)
-            ->where('curso_id',$curso->id)->firstOrFail();
+        $matricula = Matriculas::atualDoAlunoCurso(
+            (int) $alunoId,
+            (int) $curso->id,
+            $rq->integer('matricula') ?: null
+        );
 
         $quiz->load('questoes.opcoes');
         // carrega conteúdo para a sidebar
@@ -47,9 +50,11 @@ class AlunoQuizController extends Controller
         abort_if(!$alunoId, 403);
 
         // Confere matrícula
-        $matricula = Matriculas::where('aluno_id', $alunoId)
-            ->where('curso_id', $curso->id)
-            ->firstOrFail();
+        $matricula = Matriculas::atualDoAlunoCurso(
+            (int) $alunoId,
+            (int) $curso->id,
+            $rq->integer('matricula_id') ?: ($rq->integer('matricula') ?: null)
+        );
 
         // Payload: array de respostas [{questao_id, opcao_id? , resposta_texto?}]
         $payload = $rq->validate([
@@ -133,7 +138,7 @@ class AlunoQuizController extends Controller
 
         // redireciona para a tela de resultado
         return redirect()
-            ->route('aluno.quiz.result', [$curso->id, $quiz->id, $tentativa->id]);
+            ->route('aluno.quiz.result', [$curso->id, $quiz->id, $tentativa->id, 'matricula' => $matricula->id]);
     }
 
     /**
@@ -226,7 +231,7 @@ class AlunoQuizController extends Controller
         $alunoId = auth('aluno')->id() ?? $rq->session()->get('aluno_id');
         abort_if(!$alunoId, 403);
 
-        return redirect()->route('aluno.quiz.show', [$curso->id, $quiz->id]);
+        return redirect()->route('aluno.quiz.show', [$curso->id, $quiz->id, 'matricula' => $rq->integer('matricula') ?: null]);
     }
 
 

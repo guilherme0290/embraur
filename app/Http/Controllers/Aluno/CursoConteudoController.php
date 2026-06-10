@@ -14,9 +14,11 @@ class CursoConteudoController extends Controller
         $alunoId = auth('aluno')->id() ?? $request->session()->get('aluno_id');
         abort_if(!$alunoId, 403);
 
-        $matricula = Matriculas::where('aluno_id', $alunoId)
-            ->where('curso_id', $curso->id)
-            ->firstOrFail();
+        $matricula = Matriculas::atualDoAlunoCurso(
+            (int) $alunoId,
+            (int) $curso->id,
+            $request->integer('matricula') ?: null
+        );
 
         // carrega relações usadas na página
         $curso->load(['modulos.aulas', 'modulos.quiz']);

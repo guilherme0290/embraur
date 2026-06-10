@@ -39,7 +39,7 @@ class DashboardController extends Controller
 
         $stats = [
             'cursos'         => $matriculas->count(),
-            'concluidos'     => $matriculas->where('status', 'concluido')->count(),
+            'concluidos'     => $matriculas->filter(fn($m) => $m->status_exibicao === 'concluido')->count(),
             'horas'          => $horas,
             'progressoGeral' => $progressoMedio,
         ];
@@ -53,8 +53,11 @@ class DashboardController extends Controller
                 'titulo'  => $curso->titulo ?? 'Curso',
                 'thumb'   => $curso?->imagem_capa_url,   // usa accessor do model Cursos.php
                 'percent' => $percent,
+                'ciclo'   => (int) ($m->ciclo_numero ?? 1),
+                'status'  => $m->status_exibicao,
+                'vencimento' => optional($m->data_vencimento)->format('d/m/Y'),
                 // 👉 leva direto para a tela que criamos
-                'link'    => $curso ? route('aluno.curso.conteudo', $curso->id) : route('aluno.cursos'),
+                'link'    => $curso ? route('aluno.curso.conteudo', [$curso->id, 'matricula' => $m->id]) : route('aluno.cursos'),
             ];
         })->values();
 

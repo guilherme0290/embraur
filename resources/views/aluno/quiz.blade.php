@@ -35,7 +35,7 @@
                     </div>
                 </div>
 
-                <a href="{{ route('aluno.curso.conteudo', $curso->id) }}"
+                <a href="{{ route('aluno.curso.conteudo', [$curso->id, 'matricula' => $matricula->id]) }}"
                    class="text-sm text-slate-600 hover:underline flex items-center gap-2 shrink-0">
                     <span class="-ml-1">←</span> Voltar às aulas
                 </a>
@@ -53,6 +53,7 @@
 
         <form method="POST" action="{{ route('aluno.quiz.submit', [$curso->id, $quiz->id]) }}" id="formQuiz">
             @csrf
+            <input type="hidden" name="matricula_id" value="{{ $matricula->id }}">
 
             <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
 
@@ -159,7 +160,7 @@
                                 $quizIds = $curso->modulos->pluck('quiz.id')->filter()->values();
                                 $ultimas = collect();
                                 if ($quizIds->isNotEmpty()) {
-                                    $ultimas = \App\Models\QuizTentativa::where('aluno_id', $matricula->aluno_id)
+                                    $ultimas = \App\Models\QuizTentativa::where('matricula_id', $matricula->id)
                                         ->whereIn('quiz_id', $quizIds)
                                         ->orderByDesc('id')
                                         ->get()
@@ -203,7 +204,7 @@
 
                                     <div class="mt-2">
                                         @foreach($m->aulas->sortBy('ordem') as $a)
-                                            <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $m->id, $a->id]) }}"
+                                            <a href="{{ route('aluno.curso.modulo.aula', [$curso->id, $m->id, $a->id, 'matricula' => $matricula->id]) }}"
                                                class="flex items-center justify-between rounded border p-2 mb-1
                                                       {{ !$modLiberado ? 'opacity-60 pointer-events-none' : '' }} hover:bg-slate-50">
                                                 <span class="truncate text-sm">{{ $a->titulo }}</span>
@@ -213,7 +214,7 @@
                                         {{-- Prova do módulo --}}
                                         <div class="flex items-center justify-between mt-2">
                                             @if($qz)
-                                                <a href="{{ route('aluno.quiz.show', [$curso->id, $qz->id]) }}"
+                                                <a href="{{ route('aluno.quiz.show', [$curso->id, $qz->id, 'matricula' => $matricula->id]) }}"
                                                    class="px-2 py-1 text-sm border rounded hover:bg-slate-50
                                                           {{ !$modLiberado ? 'opacity-60 pointer-events-none' : '' }}">
                                                     Prova do Módulo

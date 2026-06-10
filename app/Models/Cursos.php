@@ -20,6 +20,7 @@ class Cursos extends Model
         'titulo',
         'descricao_curta',
         'descricao_completa',
+        'conteudo_programatico',
         'imagem_capa',
         'video_introducao',
         'nivel',                  // ['iniciante','intermediario','avancado']

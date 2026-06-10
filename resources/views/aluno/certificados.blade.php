@@ -15,7 +15,12 @@
                             {{ $cert->matricula->curso->titulo }}
                         </div>
                         <div class="text-xs text-gray-500 mb-3">
+                            Ciclo {{ (int) ($cert->matricula->ciclo_numero ?? 1) }} •
+                            {{ ucfirst($cert->matricula->status_exibicao) }} •
                             Emitido em {{ \Carbon\Carbon::parse($cert->data_emissao)->format('d/m/Y') }}
+                            @if($cert->matricula->data_vencimento)
+                                • vence em {{ $cert->matricula->data_vencimento->format('d/m/Y') }}
+                            @endif
                         </div>
                         <div class="flex gap-2">
                             <a href="{{ route('aluno.certificados.visualizar',  $cert) }}"

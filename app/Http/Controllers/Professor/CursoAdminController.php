@@ -58,6 +58,7 @@ class CursoAdminController extends Controller
             'categoria_id' => 'categoria',
             'titulo' => 'título do curso',
             'descricao_completa' => 'descrição completa',
+            'conteudo_programatico' => 'conteúdo programático do certificado',
             'nivel' => 'nível',
             'carga_horaria_horas' => 'carga horária do curso',
             'nota_minima_aprovacao' => 'nota mínima para aprovação',
@@ -77,6 +78,7 @@ class CursoAdminController extends Controller
             'titulo'                => ['required','string','max:255'],
             //'descricao_curta'       => ['nullable','string'],
             'descricao_completa'    => ['required','string'],
+            'conteudo_programatico'  => ['nullable','string'],
             'nivel'                 => ['required', Rule::in(['todos','iniciante','intermediario','avancado'])],
             'carga_horaria_horas'   => ['required','numeric','min:0.1'], // campo da tela (horas)
             'maximo_alunos'         => ['nullable','integer','min:1'],
@@ -107,7 +109,7 @@ class CursoAdminController extends Controller
         ], $messages, $attributes);
 
         $dataCurso = collect($data)->only([
-            'categoria_id','titulo','descricao_completa',
+            'categoria_id','titulo','descricao_completa','conteudo_programatico',
             'nivel','maximo_alunos','preco','preco_original','nota_minima_aprovacao',
             'validade_dias','status'
         ])->toArray();
@@ -200,8 +202,19 @@ class CursoAdminController extends Controller
         ]);
 
         $quizzesDoCurso = Quiz::where('curso_id', $curso->id)->get(['id','titulo']);
+        $cursosDoProfessor = Cursos::where('professor_id', session('prof_id'))
+            ->orderBy('titulo')
+            ->get(['id', 'titulo']);
+        $modulosImportaveis = Modulos::with('curso:id,titulo')
+            ->withCount('aulas')
+            ->withExists('quiz')
+            ->whereHas('curso', fn($q) => $q->where('professor_id', session('prof_id')))
+            ->where('curso_id', '!=', $curso->id)
+            ->orderBy('curso_id')
+            ->orderBy('ordem')
+            ->get(['id', 'curso_id', 'titulo']);
 
-        return view('prof.cursos.edit', compact('curso','categorias','quizzesDoCurso'));
+        return view('prof.cursos.edit', compact('curso','categorias','quizzesDoCurso','cursosDoProfessor','modulosImportaveis'));
 
 
     }
@@ -224,6 +237,7 @@ class CursoAdminController extends Controller
             'categoria_id' => 'categoria',
             'titulo' => 'título do curso',
             'descricao_completa' => 'descrição completa',
+            'conteudo_programatico' => 'conteúdo programático do certificado',
             'nivel' => 'nível',
             'carga_horaria_horas' => 'carga horária do curso',
             'nota_minima_aprovacao' => 'nota mínima para aprovação',
@@ -243,6 +257,7 @@ class CursoAdminController extends Controller
             'titulo'                => ['required','string','max:255'],
             //'descricao_curta'       => ['nullable','string'],
             'descricao_completa'    => ['required','string'],
+            'conteudo_programatico'  => ['nullable','string'],
             'nivel'                 => ['required', Rule::in(['todos','iniciante','intermediario','avancado'])],
             'carga_horaria_horas'   => ['required','numeric','min:0.1'],
             'preco'                 => ['required','numeric','min:0'],

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{Cursos, Modulos, Quiz, QuizQuestao, QuizOpcao};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class QuizController extends Controller
@@ -68,7 +69,7 @@ class QuizController extends Controller
     public function store(Request $r)
     {
         // Agora o escopo é SEMPRE módulo neste fluxo
-        $data = $r->validate([
+        $data = $this->validateQuizData($r, [
             'titulo'                  => ['nullable','string','max:255'],
             'escopo'                  => ['required', Rule::in(['modulo'])],
             'curso_id'                => ['required','exists:cursos,id'],
@@ -82,7 +83,7 @@ class QuizController extends Controller
             'questoes.*.opcoes'             => ['nullable','array'],
             'questoes.*.opcoes.*.texto'     => ['required_with:questoes.*.opcoes','string','max:255'],
             'questoes.*.opcoes.*.correta'   => ['nullable','boolean'],
-        ], $this->validationMessages(), $this->validationAttributes());
+        ]);
 
         // Coerência módulo⇄curso
         $mod = Modulos::findOrFail($data['modulo_id']);
@@ -100,11 +101,12 @@ class QuizController extends Controller
                 'correcao_manual' => false,
             ]);
 
-            foreach ($data['questoes'] as $q) {
+            foreach ($data['questoes'] as $qIdx => $q) {
                 $questao = $quiz->questoes()->create([
                     'enunciado' => $q['enunciado'],
                     'tipo'      => $q['tipo'],
                     'pontuacao' => $q['pontuacao'] ?? 1,
+                    'ordem'     => $qIdx + 1,
                 ]);
 
                 if (($q['tipo'] ?? 'multipla') === 'multipla') {
@@ -174,6 +176,7 @@ class QuizController extends Controller
                     'enunciado' => $q['enunciado'],
                     'tipo'      => $q['tipo'],
                     'pontuacao' => $q['pontuacao'] ?? 1,
+                    'ordem'     => $qIdx + 1,
                 ])->save();
 
                 // Sincroniza opções (somente se multipla)
@@ -210,13 +213,44 @@ class QuizController extends Controller
         return redirect()->route('prof.quizzes.edit', $quiz)->with('success', 'Quiz atualizado!');
     }
 
+    public function reorderQuestoes(Request $request, Quiz $quiz)
+    {
+        $quiz->loadMissing('curso');
+        abort_if(!$quiz->curso || (int) $quiz->curso->professor_id !== (int) session('prof_id'), 403);
+
+        $data = $request->validate([
+            'ordens' => ['required', 'array', 'min:1'],
+            'ordens.*.id' => ['required', 'integer', 'exists:quiz_questoes,id'],
+            'ordens.*.ordem' => ['required', 'integer', 'min:1'],
+        ]);
+
+        DB::transaction(function () use ($quiz, $data) {
+            foreach ($data['ordens'] as $item) {
+                QuizQuestao::where('quiz_id', $quiz->id)
+                    ->where('id', $item['id'])
+                    ->update(['ordem' => $item['ordem']]);
+            }
+        });
+
+        $questoes = $quiz->questoes()->get(['id', 'ordem']);
+
+        return response()->json([
+            'ok' => true,
+            'questoes' => $questoes,
+        ]);
+    }
+
     /* =========================
      * DESTROY (opcional)
      * ========================= */
     public function destroy(Quiz $quiz)
     {
+        $quiz->loadMissing('curso');
+        abort_if(!$quiz->curso || (int) $quiz->curso->professor_id !== (int) session('prof_id'), 403);
+
+        $cursoId = $quiz->curso_id;
         $quiz->delete();
-        return back()->with('success', 'Quiz removido.');
+        return redirect()->route('prof.cursos.edit', $cursoId)->with('success', 'Prova removida.');
     }
 
     /* =========================
@@ -226,7 +260,7 @@ class QuizController extends Controller
     /** Validação comum para store/update */
     private function validatePayload(Request $r, bool $updating = false): array
     {
-        return $r->validate([
+        return $this->validateQuizData($r, [
             'titulo'     => ['nullable','string','max:255'],
             'escopo'     => ['required', Rule::in(['curso','modulo'])],
             'curso_id'   => ['nullable','exists:cursos,id'],
@@ -244,7 +278,37 @@ class QuizController extends Controller
             'questoes.*.opcoes.*.id'            => $updating ? ['nullable','integer','exists:quiz_opcoes,id'] : ['nullable'],
             'questoes.*.opcoes.*.texto'         => ['required_with:questoes.*.opcoes','string','max:255'],
             'questoes.*.opcoes.*.correta'       => ['nullable','boolean'],
-        ], $this->validationMessages(), $this->validationAttributes());
+        ]);
+    }
+
+    private function validateQuizData(Request $request, array $rules): array
+    {
+        $validator = Validator::make(
+            $request->all(),
+            $rules,
+            $this->validationMessages(),
+            $this->validationAttributes()
+        );
+
+        $validator->after(function ($validator) use ($request) {
+            foreach ((array) $request->input('questoes', []) as $index => $questao) {
+                if (($questao['tipo'] ?? 'multipla') !== 'multipla') {
+                    continue;
+                }
+
+                $opcoes = (array) ($questao['opcoes'] ?? []);
+                $temCorreta = collect($opcoes)->contains(fn($opcao) => !empty($opcao['correta']));
+
+                if (!$temCorreta) {
+                    $validator->errors()->add(
+                        "questoes.$index.opcoes",
+                        'Marque a opção correta da questão.'
+                    );
+                }
+            }
+        });
+
+        return $validator->validate();
     }
 
     private function validationMessages(): array

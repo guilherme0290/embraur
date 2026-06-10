@@ -131,7 +131,13 @@
                         <div class="text-2xl font-bold">
                             <span id="precoAtualSpan">R$ {{ number_format($curso->preco ?? 0, 2, ',', '.') }}</span>
                         </div>
-                        <div class="text-xs text-slate-500">Acesso vitalício</div>
+                        <div class="text-xs text-slate-500">
+                            @if((int)($curso->validade_dias ?? 0) > 0)
+                                Validade de {{ (int) $curso->validade_dias }} dias
+                            @else
+                                Acesso vitalício
+                            @endif
+                        </div>
                     </div>
 
 
@@ -140,7 +146,21 @@
                             $alunoLogado = auth('aluno')->check() || session()->has('aluno_id');
                         @endphp
 
-                        @if($alunoLogado)
+                        @if(!empty($matriculaVigente))
+                            <div class="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                                @if($matriculaVigente->data_vencimento)
+                                    Você já possui este curso válido até {{ $matriculaVigente->data_vencimento->format('d/m/Y') }}.
+                                @else
+                                    Você já possui acesso ativo a este curso.
+                                @endif
+                            </div>
+                            <a
+                                href="{{ route('aluno.curso.conteudo', [$curso->id, 'matricula' => $matriculaVigente->id]) }}"
+                                class="btn btn-primary w-full"
+                            >
+                                Acessar curso
+                            </a>
+                        @elseif($alunoLogado)
                             {{-- Já logado → manda direto pro checkout --}}
                             <form id="buyNowForm" method="GET" action="{{ route('checkout.start', $curso->id) }}">
                                 <input type="hidden" name="cupom" id="cupomHidden">
@@ -158,10 +178,12 @@
                             </a>
                         @endif
 
-                        <form id="addToCartForm" method="post" action="{{ route('checkout.cart.add', $curso->id) }}" class="mt-2">
-                            @csrf
-                            <button class="btn btn-soft w-full">Adicionar ao Carrinho</button>
-                        </form>
+                        @empty($matriculaVigente)
+                            <form id="addToCartForm" method="post" action="{{ route('checkout.cart.add', $curso->id) }}" class="mt-2">
+                                @csrf
+                                <button class="btn btn-soft w-full">Adicionar ao Carrinho</button>
+                            </form>
+                        @endempty
                     </div>
 
                     <div class="mt-4 space-y-2 text-sm">
@@ -272,7 +294,7 @@
                             setBadges(data.count ?? 0);
                             toast(data.msg || 'Curso adicionado ao carrinho.');
                         } else {
-                            throw new Error('Resposta inválida');
+                            toast(data?.msg || 'Não foi possível adicionar este curso.', true);
                         }
                     } catch (err) {
                         toast('Falha ao adicionar. Tente novamente.', true);
