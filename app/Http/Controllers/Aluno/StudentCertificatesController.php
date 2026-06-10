@@ -193,14 +193,14 @@ class StudentCertificatesController extends Controller
         $pdf->Image($front, 0, 0, 297, 210, $type);
 
         // LOGO topo
-        $placeImage($pdf, $logoRel, 93.5, 14, 110, 36, 'LOGO');
+        $placeImage($pdf, $logoRel, 83.5, 12, 130, 42, 'LOGO');
 
         // Caixa "CERTIFICADO" (acima do nome)
         $pdf->SetDrawColor(0,0,0);
         //$pdf->Rect(123, 52, 60, 10);
         $pdf->SetFont('Arial','B',25);
-        $pdf->SetXY(123, 52);
-        $pdf->Cell(60, 10, $toPdf('CERTIFICADO'), 0, 0, 'C');
+        $pdf->SetXY(20, 52);
+        $pdf->Cell(257, 10, $toPdf('CERTIFICADO'), 0, 0, 'C');
 
         // Nome (sublinhado)
         $pdf->SetTextColor(0,0,0);
@@ -248,8 +248,8 @@ class StudentCertificatesController extends Controller
         $assinHImg = 30;
         $linhaY = 170;
         $wAssin = 70;
-        $xEsq = 55;
-        $xDir = 172;
+        $xEsq = 65;
+        $xDir = 162;
 
         // Instrutor
         $placeImage($pdf, $assinInstrutorRel, $xEsq+15, $assinYImg, 50, $assinHImg, '');
@@ -340,7 +340,8 @@ class StudentCertificatesController extends Controller
 
         // Conteúdo ministrado: usa texto manual do curso quando preenchido; se vazio, usa módulos.
         $modulos = [];
-        if (!empty($curso->conteudo_programatico)) {
+        $conteudoManual = !empty($curso->conteudo_programatico);
+        if ($conteudoManual) {
             $modulos = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $curso->conteudo_programatico))));
         }
         if (!$modulos && method_exists($curso,'modulos')) {
@@ -352,7 +353,7 @@ class StudentCertificatesController extends Controller
         $pdf->SetTextColor(20,20,20); $pdf->SetFont('Arial','',11);
         $xL=20; $xR=150; $yL=40; $yR=64; $colW=130; $lineH=6; $maxY=146; $i=1;
         foreach ($modulos as $m) {
-            $prefix = preg_match('/^\d+[\).\s-]/', $m) ? '' : $i.'. ';
+            $prefix = $conteudoManual || preg_match('/^\d+[\).\s-]/', $m) ? '' : $i.'. ';
             $i++;
             if ($yL <= $maxY) { $pdf->SetXY($xL,$yL); $pdf->MultiCell($colW,$lineH,$toPdf($prefix.$m),0,'L'); $yL=$pdf->GetY(); }
             else { if ($yR > $maxY) break; $pdf->SetXY($xR,$yR); $pdf->MultiCell($colW-2,$lineH,$toPdf($prefix.$m),0,'L'); $yR=$pdf->GetY(); }
