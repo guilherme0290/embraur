@@ -139,6 +139,21 @@
                 @error('descricao_completa') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
             </div>
 
+            <div class="md:col-span-2">
+                <label class="text-sm font-medium">Conteúdo programático do certificado</label>
+                <textarea
+                    name="conteudo_programatico"
+                    id="conteudo_programatico"
+                    class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                    rows="8"
+                    placeholder="Ex.:&#10;1. Introdução à NR10&#10;2. Medidas de controle de risco&#10;3. Proteção e combate a incêndio"
+                >{{ old('conteudo_programatico', $curso->conteudo_programatico) }}</textarea>
+                <p class="mt-1 text-xs text-slate-500">
+                    Se preencher este campo, ele substitui a lista automática de módulos no certificado. Se deixar vazio, o certificado continua usando os módulos do curso.
+                </p>
+                @error('conteudo_programatico') <div class="text-red-600 text-xs mt-1">{{ $message }}</div> @enderror
+            </div>
+
             <div>
                 <label class="text-sm font-medium">Nível *</label>
                 <select name="nivel" required

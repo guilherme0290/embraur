@@ -192,8 +192,8 @@ class StudentCertificatesController extends Controller
         $type = strtolower(pathinfo($front, PATHINFO_EXTENSION)) === 'png' ? 'PNG' : 'JPG';
         $pdf->Image($front, 0, 0, 297, 210, $type);
 
-        // LOGO topo (maior). Caixa ~ 90 x 32 mm
-        $placeImage($pdf, $logoRel, 103.5, 16, 95, 32, 'LOGO');
+        // LOGO topo
+        $placeImage($pdf, $logoRel, 93.5, 14, 110, 36, 'LOGO');
 
         // Caixa "CERTIFICADO" (acima do nome)
         $pdf->SetDrawColor(0,0,0);
@@ -220,7 +220,7 @@ class StudentCertificatesController extends Controller
         $pdf->SetXY(25, 105);
         $pdf->Cell(247, 6, $toPdf('Certificamos que o aluno concluiu com aproveitamento o curso de'), 0, 2, 'C');
         $pdf->SetFont('Arial','B',14);
-        $pdf->Cell(247, 6, $toPdf($curso->titulo), 0, 2, 'C');
+        $pdf->Cell(247, 6, $toPdf($curso->titulo.','), 0, 2, 'C');
         $pdf->SetFont('Arial','',12);
         $pdf->Cell(247, 6, $toPdf('com carga horária de '.$cargaHorariaHoras.' horas realizado no período:'), 0, 2, 'C');
 
@@ -238,9 +238,9 @@ class StudentCertificatesController extends Controller
         }
 
         $pdf->SetDrawColor(120,120,120);
-        $pdf->Rect(98, 123, 101, 10);
+        $pdf->Rect(98, 126, 101, 10);
         $pdf->SetFont('Arial','',11);
-        $pdf->SetXY(98, 123);
+        $pdf->SetXY(98, 126);
         $pdf->Cell(101, 10, $toPdf('De '.$fmt($inicio).' a '.$fmt($fim)), 0, 0, 'C');
 
         // Assinaturas: instrutor (com imagem) e aluno (SÓ espaço/linha)
@@ -248,8 +248,8 @@ class StudentCertificatesController extends Controller
         $assinHImg = 30;
         $linhaY = 170;
         $wAssin = 70;
-        $xEsq = 40;
-        $xDir = 300 - 30 - $wAssin;
+        $xEsq = 55;
+        $xDir = 172;
 
         // Instrutor
         $placeImage($pdf, $assinInstrutorRel, $xEsq+15, $assinYImg, 50, $assinHImg, '');
@@ -338,18 +338,24 @@ class StudentCertificatesController extends Controller
         $pdf->SetFont('Arial','B',11);
         $pdf->Cell(30, 6, $toPdf($cert->codigo_verificacao ?? ''), 0, 1, 'L');
 
-        // Lista de módulos (2 colunas; direita começa mais baixo p/ não colidir com o quadro)
+        // Conteúdo ministrado: usa texto manual do curso quando preenchido; se vazio, usa módulos.
         $modulos = [];
-        if (method_exists($curso,'modulos')) { try { $modulos = $curso->modulos()->orderBy('ordem')->pluck('titulo')->toArray(); } catch (\Throwable $e) {} }
-        if (!$modulos && !empty($curso->conteudo_programatico)) {
+        if (!empty($curso->conteudo_programatico)) {
             $modulos = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $curso->conteudo_programatico))));
+        }
+        if (!$modulos && method_exists($curso,'modulos')) {
+            try {
+                $modulos = $curso->modulos()->orderBy('ordem')->pluck('titulo')->toArray();
+            } catch (\Throwable $e) {}
         }
 
         $pdf->SetTextColor(20,20,20); $pdf->SetFont('Arial','',11);
         $xL=20; $xR=150; $yL=40; $yR=64; $colW=130; $lineH=6; $maxY=146; $i=1;
         foreach ($modulos as $m) {
-            if ($yL <= $maxY) { $pdf->SetXY($xL,$yL); $pdf->MultiCell($colW,$lineH,$toPdf(($i++).'. '.$m),0,'L'); $yL=$pdf->GetY(); }
-            else { if ($yR > $maxY) break; $pdf->SetXY($xR,$yR); $pdf->MultiCell($colW-2,$lineH,$toPdf(($i++).'. '.$m),0,'L'); $yR=$pdf->GetY(); }
+            $prefix = preg_match('/^\d+[\).\s-]/', $m) ? '' : $i.'. ';
+            $i++;
+            if ($yL <= $maxY) { $pdf->SetXY($xL,$yL); $pdf->MultiCell($colW,$lineH,$toPdf($prefix.$m),0,'L'); $yL=$pdf->GetY(); }
+            else { if ($yR > $maxY) break; $pdf->SetXY($xR,$yR); $pdf->MultiCell($colW-2,$lineH,$toPdf($prefix.$m),0,'L'); $yR=$pdf->GetY(); }
         }
 
         // Corpo técnico + assinaturas (cabem antes do fim da página)
