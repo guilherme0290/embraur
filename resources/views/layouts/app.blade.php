@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>@yield('title', 'Embraur')</title>
+    <title>@yield('title', 'Instituto da Indústria')</title>
     <link rel="icon" type="image/png" href="{{ asset('storage/images/favicon.png') }}">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
 
@@ -19,10 +19,10 @@
     <style>
         .container-page{max-width:1100px;margin:0 auto;padding-left:1rem;padding-right:1rem}
         .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:.5rem;padding:.5rem .9rem;font-weight:600;border:1px solid transparent;line-height:1}
-        .btn-primary{background:#889875;color:#fff;border-color:#889875}
-        .btn-primary:hover{background:#7b896b;border-color:#7b896b}
-        .btn-outline{background:#fff;color:#0f172a;border-color:#cbd5e1}.btn-outline:hover{background:#f8fafc}
-        .btn-soft{background:#f1f5f9;color:#0f172a}.btn-soft:hover{background:#e2e8f0}
+        .btn-primary{background:#f26500;color:#fff;border-color:#f26500}
+        .btn-primary:hover{background:#d95500;border-color:#d95500}
+        .btn-outline{background:#fff;color:#17191d;border-color:#ffc184}.btn-outline:hover{background:#fff3e8}
+        .btn-soft{background:#17191d;color:#fff}.btn-soft:hover{background:#262a31}
     </style>
     <style>html{scroll-behavior:smooth}</style>
 </head>
@@ -31,18 +31,18 @@
 
 <body class="bg-slate-50 text-slate-800">
 {{-- Header ÚNICO --}}
-<header class="bg-white border-b">
+<header class="bg-[#0b0d10] border-b border-[#262a31] text-white">
     <div class="container-page flex items-center justify-between h-14">
         <a href="{{ route('site.home') }}" class="flex items-center gap-2 font-semibold">
-            <img src="{{ asset('storage/images/logo.png') }}" alt="Logo Embraur" class="h-8 w-auto">
+            <img src="{{ asset('storage/images/logo.png') }}" alt="Logo Instituto da Indústria" class="h-8 w-auto">
         </a>
 
 
         <nav class="hidden md:flex items-center gap-6 text-sm">
-            <a href="{{ route('site.home') }}" class="hover:text-blue-600">INICIO</a>
-            <a href="{{ route('site.cursos') }}" class="hover:text-blue-600">CURSOS</a>
-            <a  href="{{ url('/#sobre') }}" class="hover:text-blue-600">SOBRE NÓS</a>
-            <a href="{{ url('/#contato') }}" class="hover:text-blue-600">CONTATO</a>
+            <a href="{{ route('site.home') }}" class="hover:text-orange-500">INICIO</a>
+            <a href="{{ route('site.cursos') }}" class="hover:text-orange-500">CURSOS</a>
+            <a  href="{{ url('/#sobre') }}" class="hover:text-orange-500">SOBRE NÓS</a>
+            <a href="{{ url('/#contato') }}" class="hover:text-orange-500">CONTATO</a>
         </nav>
 
 
@@ -71,12 +71,12 @@
 @if (session('success') || session('error') || session('info'))
     <div class="container-page max-w-5xl mx-auto mt-4">
         @if (session('success'))
-            <div class="mb-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-900 px-4 py-3">
+            <div class="mb-3 rounded-lg border border-orange-200 bg-orange-50 text-orange-900 px-4 py-3">
                 {{ session('success') }}
             </div>
         @endif
         @if (session('info'))
-            <div class="mb-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-900 px-4 py-3">
+            <div class="mb-3 rounded-lg border border-orange-200 bg-orange-50 text-orange-900 px-4 py-3">
                 {{ session('info') }}
             </div>
         @endif
@@ -112,29 +112,29 @@
 <main>@yield('content')</main>
 
 {{-- Footer ÚNICO --}}
-<footer class="mt-10 border-t bg-white">
+<footer class="mt-10 border-t border-[#262a31] bg-[#0b0d10] text-white">
     <div class="container-page py-8 grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
         <div>
             <div class="font-semibold mb-2 flex items-center gap-2">
-                <img src="{{ asset('storage/images/logo.png') }}" alt="Logo Embraur" class="h-6 w-auto">
+                <img src="{{ asset('storage/images/logo.png') }}" alt="Logo Instituto da Indústria" class="h-6 w-auto">
             </div>
-            <p class="text-slate-600">Plataforma completa de ensino a distância com cursos de qualidade e certificação reconhecida.</p>
+            <p class="text-slate-300">Plataforma completa de ensino a distância com cursos de qualidade e certificação reconhecida.</p>
         </div>
         <div>
             <div class="font-semibold mb-2">Links Rápidos</div>
-            <ul class="space-y-1 text-slate-600">
+            <ul class="space-y-1 text-slate-300">
                 <li>
-                    <a class="hover:text-blue-600" href="{{ route('site.cursos') }}">
+                    <a class="hover:text-orange-500" href="{{ route('site.cursos') }}">
                         Catálogo de Cursos
                     </a>
                 </li>
                 <li>
-                    <a class="hover:text-blue-600" href="{{ url('/#sobre') }}">
+                    <a class="hover:text-orange-500" href="{{ url('/#sobre') }}">
                         Sobre Nós
                     </a>
                 </li>
                 <li>
-                    <a class="hover:text-blue-600" href="{{ url('/#contato') }}">
+                    <a class="hover:text-orange-500" href="{{ url('/#contato') }}">
                         Contato
                     </a>
                 </li>
@@ -142,21 +142,21 @@
         </div>
         <div>
             <div class="font-semibold mb-2">Área do Aluno</div>
-            <ul class="space-y-1 text-slate-600">
-                <li><a class="hover:text-blue-600" href="{{ route('aluno.login') }}">Login</a></li>
-                <li><a class="hover:text-blue-600" href="{{ route('aluno.register') }}">Cadastro</a></li>
-                <li><a class="hover:text-blue-600" href="{{ route('aluno.cursos') }}">Meus Cursos</a></li>
-                <li><a class="hover:text-blue-600" href="{{ route('aluno.certificados') }}">Certificados</a></li>
+            <ul class="space-y-1 text-slate-300">
+                <li><a class="hover:text-orange-500" href="{{ route('aluno.login') }}">Login</a></li>
+                <li><a class="hover:text-orange-500" href="{{ route('aluno.register') }}">Cadastro</a></li>
+                <li><a class="hover:text-orange-500" href="{{ route('aluno.cursos') }}">Meus Cursos</a></li>
+                <li><a class="hover:text-orange-500" href="{{ route('aluno.certificados') }}">Certificados</a></li>
             </ul>
         </div>
         <div>
             <div class="font-semibold mb-2">Contato</div>
-            <ul class="space-y-1 text-slate-600">
+            <ul class="space-y-1 text-slate-300">
                 <li>embraur@embraur.com.br</li><li>(48) 3198-3198</li>
             </ul>
         </div>
     </div>
-    <div class="text-center text-xs text-slate-500 py-4 border-t">© 2025 Embraur. Todos os direitos reservados.</div>
+    <div class="text-center text-xs text-slate-400 py-4 border-t border-[#262a31]">© 2025 Instituto da Indústria. Todos os direitos reservados.</div>
 
     {{-- WHATSAPP FLUTUANTE (lado direito) --}}
     <div class="fixed right-5 bottom-5 flex flex-col items-end gap-3 z-50">
@@ -171,7 +171,7 @@
 
         {{-- carrinho (se quiser mover aqui) --}}
         <button id="miniCartToggle"
-                class="inline-flex items-center gap-2 px-3 py-2 rounded-full shadow border bg-white hover:bg-slate-50">
+                class="inline-flex items-center gap-2 px-3 py-2 rounded-full shadow border border-orange-200 bg-white hover:bg-orange-50 text-slate-900">
             <span>🛒</span>
             <span>Carrinho</span>
         </button>
@@ -206,6 +206,6 @@
 <script>
     // some apenas o de sucesso após 4s
     setTimeout(()=>{
-        document.querySelectorAll('[role="alert"].border-blue-200')?.forEach(el => el.remove());
+        document.querySelectorAll('[role="alert"].border-orange-200')?.forEach(el => el.remove());
     }, 4000);
 </script>

@@ -155,7 +155,7 @@
                 @endif
                 <div style="margin-top:3mm">
                     Código: <span class="code">{{ $codigo }}</span><br>
-                    Verifique em: <span class="muted">embraur.com/c/validar</span>
+                    Verifique no site do <span class="muted">Instituto da Indústria</span>
                 </div>
             </div>
 

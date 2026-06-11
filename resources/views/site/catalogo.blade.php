@@ -18,7 +18,7 @@
                         <input
                             name="busca"
                             value="{{ request('busca') }}"
-                            class="w-full pl-9 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500/30"
+                            class="w-full pl-9 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-orange-500/30"
                             placeholder="Buscar cursos..."
                         >
                     </div>
@@ -63,7 +63,7 @@
                     {{-- Conteúdo --}}
                     <div class="p-4 space-y-3 flex-1 flex flex-col">
                         <div class="flex items-center justify-between text-[11px]">
-            <span class="px-2 py-1 rounded border border-blue-200 text-blue-700 bg-blue-50">
+            <span class="px-2 py-1 rounded border border-orange-200 text-orange-700 bg-orange-50">
                 {{ $curso->categoria->nome ?? 'Sem categoria' }}
             </span>
                             <span class="px-2 py-1 rounded border border-slate-200 text-slate-600 bg-slate-50">
@@ -95,7 +95,7 @@
                     R$ {{ number_format($curso->preco_original, 2, ',', '.') }}
                 </span>
                             @endif
-                            <span class="font-semibold text-blue-700">
+                            <span class="font-semibold text-orange-700">
                 R$ {{ number_format($curso->preco, 2, ',', '.') }}
             </span>
                         </div>

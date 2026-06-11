@@ -15,10 +15,10 @@ class ProfessorUserSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'helder@embraur.com.br'], // chave única
+            ['email' => 'admin@id.com.br'], // chave única
             [
-                'password'        => Hash::make('Embraur@02'),
-                'nome_completo'   => 'Helder',
+                'password'        => Hash::make('Admin@2026'),
+                'nome_completo'   => 'Administrador',
                 'telefone'        => '(11) 90000-0000',
                 'cpf'             => '00000000000',     // ajuste se validar CPF
                 'data_nascimento' => '1980-01-01',      // YYYY-mm-dd

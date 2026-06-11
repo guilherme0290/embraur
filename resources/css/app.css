@@ -1,11 +1,13 @@
-/* Paleta baseada em #889875 */
+/* Paleta baseada na identidade preto/grafite/laranja */
 :root{
-    --brand-50:#f5f7f2;
-    --brand-200:#d5dcc9;
-    --brand-400:#aab798;
-    --brand-600:#778663;
-    --brand-700:#606d50;
-    --brand-800:#4b5440;
+    --brand-50:#fff3e8;
+    --brand-200:#ffc184;
+    --brand-400:#ff750f;
+    --brand-600:#f26500;
+    --brand-700:#d95500;
+    --brand-800:#733000;
+    --brand-dark:#0b0d10;
+    --brand-graphite:#17191d;
 }
 
 /* Base do botão */
@@ -15,7 +17,7 @@
     transition:all .15s ease; line-height:1.2;
 }
 
-/* Primário = verde-oliva */
+/* Primário = laranja da marca */
 .btn-primary{
     background:var(--brand-600);
     border:1px solid var(--brand-600);
@@ -24,7 +26,7 @@
 .btn-primary:hover{ background:var(--brand-700); border-color:var(--brand-700); }
 .btn-primary:focus-visible{
     outline:none;
-    box-shadow:0 0 0 3px rgba(119,134,99,.25); /* brand-600 translúcido */
+    box-shadow:0 0 0 3px rgba(242,101,0,.25);
 }
 .btn-primary:disabled{ opacity:.6; cursor:not-allowed; }
 

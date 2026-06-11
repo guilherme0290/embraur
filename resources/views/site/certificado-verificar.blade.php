@@ -103,7 +103,7 @@
                         Para confirmar a autenticidade, compare o código acima com o impresso no certificado,
                         ou acesse:
                         <a href="{{ route('certificados.verify', $cert->codigo_verificacao) }}"
-                           class="text-indigo-600 hover:text-indigo-700 underline break-all">
+                           class="text-orange-600 hover:text-orange-700 underline break-all">
                             {{ route('certificados.verify', $cert->codigo_verificacao) }}
                         </a>
                     </div>

@@ -29,7 +29,7 @@
                 <span>Carrinho</span>
                 <span
                     data-cart-badge
-                    class="absolute -top-2 -right-2 hidden min-w-[20px] h-5 px-1 rounded-full bg-blue-600 text-white text-[11px] grid place-items-center"
+                    class="absolute -top-2 -right-2 hidden min-w-[20px] h-5 px-1 rounded-full bg-orange-600 text-white text-[11px] grid place-items-center"
                 >0</span>
             </a>
         </div>
@@ -50,7 +50,7 @@
                 {{-- Tabs simples (Conteúdo / Sobre / Instrutor / Avaliações) --}}
                 <div class="rounded-lg border bg-white">
                     <div class="flex text-sm">
-                        <button class="px-4 py-2 border-b-2 border-blue-600 text-blue-700 font-medium">Conteúdo</button>
+                        <button class="px-4 py-2 border-b-2 border-orange-600 text-orange-700 font-medium">Conteúdo</button>
                         {{--                        <button class="px-4 py-2 text-slate-500">Sobre</button>--}}
                         {{--                        <button class="px-4 py-2 text-slate-500">Instrutor</button>--}}
                         {{--                        <button class="px-4 py-2 text-slate-500">Avaliações</button>--}}
@@ -147,7 +147,7 @@
                         @endphp
 
                         @if(!empty($matriculaVigente))
-                            <div class="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                            <div class="rounded-lg border border-orange-200 bg-orange-50 p-3 text-sm text-orange-900">
                                 @if($matriculaVigente->data_vencimento)
                                     Você já possui este curso válido até {{ $matriculaVigente->data_vencimento->format('d/m/Y') }}.
                                 @else
@@ -307,7 +307,7 @@
                 el.textContent = text;
                 el.className =
                     'fixed bottom-4 left-1/2 -translate-x-1/2 px-3 py-2 rounded text-white text-sm shadow ' +
-                    (isError ? 'bg-red-600' : 'bg-blue-600');
+                    (isError ? 'bg-red-600' : 'bg-orange-600');
                 document.body.appendChild(el);
                 setTimeout(() => el.remove(), 1800);
             }

@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
-@section('title','Embraur')
+@section('title','Instituto da Indústria')
 
 @section('content')
     {{-- Hero --}}
     <section
         class="relative bg-cover bg-center"
-        style="background-image: url('{{ asset('storage/images/backgroud.png') }}')"
+        style="background-image: url('{{ asset('images/hero-instituto-industria.png') }}')"
     >
         {{-- overlay com gradient “brand” --}}
-        <div class="absolute inset-0 bg-gradient-to-r from-[#2f3528]/90 via-[#2f3528]/70 to-[#2f3528]/40"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-[#0b0d10]/95 via-[#17191d]/75 to-[#391800]/45"></div>
 
         <div class="relative mx-auto container-page px-4 py-24 md:py-28">
             <div class="max-w-3xl rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md text-white p-6 md:p-8 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
@@ -19,7 +19,7 @@
 
                 <h1 class="mt-4 text-4xl md:text-5xl font-extrabold leading-tight">
                     Transforme sua carreira com<br>
-                    <span class="text-[#c1cab0]">cursos de qualidade</span>
+                    <span class="text-[#ff750f]">cursos de qualidade</span>
                 </h1>
 
                 <p class="mt-4 max-w-2xl text-white/90">
@@ -47,7 +47,7 @@
                             : number_format($horas, 1, ',', '.');
                     @endphp
                     <div class="group card h-full flex flex-col overflow-hidden rounded-xl border border-slate-200
-            hover:border-[#cdd5bf] hover:ring-2 hover:ring-[#cdd5bf]/60 hover:shadow-xl
+            hover:border-[#ffc184] hover:ring-2 hover:ring-[#ffc184]/60 hover:shadow-xl
             transition-all duration-300">
                         <div class="h-32 overflow-hidden">
                             <img src="{{ $curso->imagem_capa_url }}" alt="Capa do curso {{ $curso->titulo }}"
@@ -56,7 +56,7 @@
 
                         <div class="p-4 flex-1 flex flex-col">
                             <div class="flex items-center justify-between text-xs">
-                                <span class="badge border-[#d5dcc9] text-[#606d50] bg-[#f5f7f2]">{{ $curso->categoria->nome }}</span>
+                                <span class="badge border-[#ffc184] text-[#ad3f00] bg-[#fff3e8]">{{ $curso->categoria->nome }}</span>
                                 <span class="badge border-slate-200 text-slate-600 bg-slate-50">{{ $curso->nivel }}</span>
                             </div>
 
@@ -77,7 +77,7 @@
             R$ {{ number_format($curso->preco_original,2,',','.') }}
           </span>
                                     @endif
-                                    <span class="text-lg font-bold text-[#606d50]">
+                                    <span class="text-lg font-bold text-[#f26500]">
           R$ {{ number_format($curso->preco,2,',','.') }}
         </span>
                                 </div>
@@ -161,7 +161,7 @@
     </section>
 
     {{-- SOBRE --}}
-    <section id="sobre" class="bg-[#f5f7f2]">
+    <section id="sobre" class="bg-[#fff3e8]">
         <div class="mx-auto container-page px-4 py-12 grid md:grid-cols-2 gap-8 items-center">
             <div>
                 <h2 class="text-2xl font-bold">Sobre</h2>
@@ -197,7 +197,7 @@
     {{-- CONTATO (premium) --}}
     <section id="contato" class="relative">
         {{-- fundo suave com gradient --}}
-        <div class="absolute inset-0 bg-gradient-to-b from-white via-[#f8faf7] to-white"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-white via-[#fff3e8] to-white"></div>
 
         <div class="relative mx-auto container-page px-4 py-16">
             <div class="text-center">
@@ -210,7 +210,7 @@
                 <div class="group rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all">
                     <div class="p-6">
                         <div class="flex items-center gap-3">
-                            <div class="h-10 w-10 rounded-xl grid place-items-center bg-emerald-50 text-emerald-600">
+                            <div class="h-10 w-10 rounded-xl grid place-items-center bg-orange-50 text-orange-600">
                                 <i class="ri-whatsapp-line text-xl"></i>
                             </div>
                             <div>
@@ -224,7 +224,7 @@
                         </p>
 
                         <div class="mt-4 flex items-center gap-2">
-                            <a href="https://wa.me/554831983198?text=Ol%C3%A1!%20Preciso%20de%20suporte%20no%20site%20Embraur."
+                            <a href="https://wa.me/554831983198?text=Ol%C3%A1!%20Preciso%20de%20suporte%20no%20site%20Instituto%20da%20Ind%C3%BAstria."
                                target="_blank" rel="noopener"
                                class="btn btn-primary !rounded-lg inline-flex items-center gap-2">
                                 <i class="ri-send-plane-line"></i> Iniciar conversa
@@ -241,7 +241,7 @@
                 <div class="group rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all">
                     <div class="p-6">
                         <div class="flex items-center gap-3">
-                            <div class="h-10 w-10 rounded-xl grid place-items-center bg-sky-50 text-sky-600">
+                            <div class="h-10 w-10 rounded-xl grid place-items-center bg-orange-50 text-orange-600">
                                 <i class="ri-mail-line text-xl"></i>
                             </div>
                             <div>
@@ -271,12 +271,12 @@
                 <div class="group rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all">
                     <div class="p-6">
                         <div class="flex items-center gap-3">
-                            <div class="h-10 w-10 rounded-xl grid place-items-center bg-fuchsia-50 text-fuchsia-600">
+                            <div class="h-10 w-10 rounded-xl grid place-items-center bg-orange-50 text-orange-600">
                                 <i class="ri-instagram-line text-xl"></i>
                             </div>
                             <div>
                                 <div class="text-sm text-slate-500">Redes Sociais</div>
-                                <div class="font-semibold text-slate-900">@embraur</div>
+                                <div class="font-semibold text-slate-900">@institutodaindustria</div>
                             </div>
                         </div>
 
@@ -285,11 +285,11 @@
                         </p>
 
                         <div class="mt-4 flex items-center gap-2">
-                            <a href="https://www.instagram.com/embraur" target="_blank" rel="noopener"
+                            <a href="https://www.instagram.com/institutodaindustria/" target="_blank" rel="noopener"
                                class="btn btn-primary !rounded-lg inline-flex items-center gap-2">
                                 <i class="ri-external-link-line"></i> Abrir Instagram
                             </a>
-                            <button type="button" onclick="window.open('https://www.instagram.com/embraur','_blank')"
+                            <button type="button" onclick="window.open('https://www.instagram.com/institutodaindustria/','_blank')"
                                     class="btn btn-outline !rounded-lg">
                                 Seguir
                             </button>
@@ -333,7 +333,7 @@
                text-slate-800 transition-all">
         <span class="font-medium">Carrinho</span>
         <span data-cart-badge
-              class="min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#778663] text-white text-[11px] grid place-items-center {{ $miniCart->isEmpty() ? 'hidden' : '' }}">
+              class="min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#f26500] text-white text-[11px] grid place-items-center {{ $miniCart->isEmpty() ? 'hidden' : '' }}">
         {{ $miniCart->count() }}
     </span>
     </button>
@@ -407,6 +407,6 @@
         .parceiros-track:hover{ animation-play-state:paused; }
 
         /* Botão primário: glow discreto */
-        .btn.btn-primary:hover{ box-shadow:0 10px 30px -10px rgba(96,109,80,.45); }
+        .btn.btn-primary:hover{ box-shadow:0 10px 30px -10px rgba(242,101,0,.45); }
     </style>
 @endsection

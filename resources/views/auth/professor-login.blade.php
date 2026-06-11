@@ -5,7 +5,7 @@
     <section class="mx-auto container-page px-4 py-12">
         <div class="text-center mb-6">
             <div class="inline-flex items-center gap-2 text-blue-700">
-                <i class="ri-graduation-cap-line text-xl"></i><span class="font-semibold">Embraur</span>
+                <i class="ri-graduation-cap-line text-xl"></i><span class="font-semibold">Instituto da Indústria</span>
             </div>
             <h1 class="text-2xl font-extrabold mt-2">Portal do professor</h1>
             <p class="text-slate-600">Entre com suas credenciais para o painel administrativo</p>

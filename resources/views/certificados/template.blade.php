@@ -130,7 +130,7 @@
 
         {{-- Código de verificação (central inferior, perto do louro) --}}
         <div class="abs codigo" style="top: {{ $codigoTop }}mm;">
-            Código: <span class="val">{{ $codigo }}</span> • Verifique: <span style="color:#6b7280">embraur.com/c/validar</span>
+            Código: <span class="val">{{ $codigo }}</span> • Verifique no site do <span style="color:#6b7280">Instituto da Indústria</span>
         </div>
     </div>
 </div>
